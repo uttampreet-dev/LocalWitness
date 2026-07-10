@@ -1,0 +1,8 @@
+streamlit
+faster-whisper
+sentence-transformers
+chromadb
+pypdf
+python-docx
+ollama
+numpy
