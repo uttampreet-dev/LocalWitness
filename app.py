@@ -10,7 +10,8 @@ from pathlib import Path
 import streamlit as st
 
 from keptra.index.chunk import chunk_segments, chunk_text
-from keptra.index.store import add_chunks, clear, list_sources, query
+from keptra.index.store import add_chunks, clear, count, list_sources, query
+from keptra.metrics import MODEL_SPECS, get_metrics, latest
 from keptra.ingest.audio import transcribe
 from keptra.ingest.documents import extract_text
 from keptra.query.answer import answer_stream
@@ -148,4 +149,40 @@ with ask_tab:
 
 with metrics_tab:
     st.subheader("Metrics")
-    st.info("Coming soon: model sizes, tokens/sec, ms/query — all measured live.")
+    st.markdown(
+        "**All inference runs locally on Apple Silicon — no cloud, no GPU server.**"
+    )
+
+    sources = list_sources()
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Items indexed", len(sources))
+    col2.metric("Chunks stored", count())
+    col3.metric(
+        "Questions answered", get_metrics()["counters"].get("questions_answered", 0)
+    )
+
+    rows = []
+    for spec in MODEL_SPECS:
+        perf = latest(spec["perf_key"])
+        rows.append(
+            {
+                "Model": spec["name"],
+                "Task": spec["task"],
+                "Source": spec["source"],
+                "License": spec["license"],
+                "Approx size": spec["size"],
+                "Measured performance": (
+                    f"{perf:.1f} {spec['perf_label']}" if perf is not None else "—"
+                ),
+            }
+        )
+    st.dataframe(
+        rows,
+        use_container_width=True,
+        hide_index=True,
+        column_config={"Source": st.column_config.LinkColumn("Source")},
+    )
+    st.caption(
+        "Performance numbers are measured live in this session — a “—” means "
+        "that stage hasn't run yet (upload something or ask a question)."
+    )
