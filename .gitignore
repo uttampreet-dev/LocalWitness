@@ -5,3 +5,5 @@ __pycache__/
 .DS_Store
 chroma_db/
 exports/
+datasets/
+runs/
