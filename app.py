@@ -53,15 +53,40 @@ with upload_tab:
             tmp.write(uploaded.getbuffer())
             tmp_path = tmp.name
         created_at = datetime.now().isoformat(timespec="seconds")
+        cache_key = f"{uploaded.name}:{uploaded.size}"
         if suffix in AUDIO_EXTENSIONS:
-            with st.spinner("Transcribing locally (first run loads Whisper)…"):
-                result = transcribe(tmp_path)
+            transcript_cache = st.session_state.setdefault("transcript_cache", {})
+            result = transcript_cache.get(cache_key)
+            if result is None:
+                with st.spinner("Transcribing locally (first run loads Whisper)…"):
+                    result = transcribe(tmp_path)
+                transcript_cache[cache_key] = result
             st.success(
                 f"Transcribed **{uploaded.name}** "
                 f"({result['duration']:.0f}s of audio, fully offline)"
             )
             for seg in result["segments"]:
                 st.markdown(f"`[{seg['start']}–{seg['end']}]` {seg['text']}")
+            transcript = "\n".join(
+                f"[{seg['start']}-{seg['end']}] {seg['text']}"
+                for seg in result["segments"]
+            )
+            redact_export = st.toggle(
+                "Redact PII in transcript export",
+                help="Replace names, emails, phones, and IDs with typed tags "
+                "like [PERSON] — detected locally by Presidio.",
+            )
+            if redact_export:
+                from keptra.privacy.redact import redact
+
+                with st.spinner("Redacting locally (first run loads spaCy)…"):
+                    transcript = redact(transcript)
+                st.markdown(f"```\n{transcript}\n```")
+            st.download_button(
+                "⬇️ Export transcript (.txt)",
+                transcript,
+                file_name=f"{Path(uploaded.name).stem}_transcript.txt",
+            )
             chunks = chunk_segments(
                 result["segments"],
                 {
@@ -72,7 +97,6 @@ with upload_tab:
             )
         elif suffix in IMAGE_EXTENSIONS:
             caption_cache = st.session_state.setdefault("caption_cache", {})
-            cache_key = f"{uploaded.name}:{uploaded.size}"
             described = caption_cache.get(cache_key)
             if described is None:
                 with st.spinner("Captioning locally (Moondream)…"):
@@ -133,10 +157,12 @@ with upload_tab:
                     )
                 )
         replaced = indexed = 0
-        if chunks:
+        indexed_keys = st.session_state.setdefault("indexed_keys", set())
+        if chunks and cache_key not in indexed_keys:
             with st.spinner("Indexing locally (chunk → embed → store)…"):
                 replaced = delete_source(uploaded.name)
                 indexed = add_chunks(chunks)
+            indexed_keys.add(cache_key)
         if replaced:
             st.toast(
                 f"Re-indexed {uploaded.name}: {indexed} chunk(s) "
@@ -196,11 +222,24 @@ with ask_tab:
         "Your question",
         placeholder="What did she say the deadline was, and which document mentions the payment?",
     )
+    redact_answer = st.toggle(
+        "Redact PII in answer",
+        help="Replace names, emails, phones, and IDs with typed tags like "
+        "[PERSON] — detected locally by Presidio.",
+    )
     if st.button("Ask", type="primary") and question.strip():
         with st.spinner("Searching your notes…"):
             hits = retrieve(question)
         if not hits:
             st.warning("Nothing indexed yet — upload a voice note or document first.")
+        elif redact_answer:
+            # No streaming here: PII must never flash on screen before the
+            # redaction pass runs over the completed answer.
+            from keptra.privacy.redact import redact
+
+            with st.spinner("Answering + redacting locally…"):
+                full_answer = "".join(answer_stream(question, hits))
+                st.markdown(redact(full_answer))
         else:
             st.write_stream(answer_stream(question, hits))
             with st.expander(f"Sources — {len(hits)} chunk(s) used", expanded=False):

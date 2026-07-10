@@ -83,6 +83,15 @@ MODEL_SPECS = [
         "perf_label": "ms per image",
     },
     {
+        "name": "Presidio + spaCy en_core_web_lg",
+        "task": "PII detection & redaction (names, emails, phones, IDs)",
+        "source": "https://github.com/microsoft/presidio",
+        "license": "MIT (spaCy model: MIT)",
+        "size": "~590 MB (spaCy model)",
+        "perf_key": "redact_ms",
+        "perf_label": "ms per redaction",
+    },
+    {
         "name": "qwen2.5:3b (INT4 GGUF) via Ollama",
         "task": "RAG answering (local LLM)",
         "source": "https://ollama.com/library/qwen2.5",

@@ -20,9 +20,9 @@ numpy==1.26.4                  # pinned <2 for broad compatibility with the abov
 # Moondream image captioning is pulled via Ollama (no pip dep): `ollama pull moondream`
 ultralytics==8.3.55          # YOLOv8n object/face detection for privacy blur
 opencv-python==4.10.0.84      # image read/write + Gaussian blur for export
-# presidio-analyzer==2.2.355    # local PII detection
-# presidio-anonymizer==2.2.355  # local PII redaction
-# spacy==3.8.2                  # backend for Presidio (also run: python -m spacy download en_core_web_lg)
+presidio-analyzer==2.2.355    # local PII detection
+presidio-anonymizer==2.2.355  # local PII redaction
+spacy==3.8.2                  # backend for Presidio (also run: python -m spacy download en_core_web_lg)
 
 # ---- Optional optimization experiments (skip unless you have spare time) ----
 # onnx==1.17.0

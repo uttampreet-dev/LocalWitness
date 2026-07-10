@@ -25,6 +25,11 @@ numbers below are from that machine:
 | Embeddings | [all-MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) (384-dim) | PyTorch on MPS | Apache-2.0 | ~90 MB | ~90 ms per chunk |
 | Vector search | [ChromaDB](https://github.com/chroma-core/chroma) (persistent, HNSW) | local, on-disk | Apache-2.0 | n/a (library) | ~330 ms per query (incl. query embedding) |
 | Answering | [qwen2.5:3b](https://ollama.com/library/qwen2.5) (INT4 GGUF) via Ollama | llama.cpp / Metal | Apache-2.0 | ~1.9 GB | ~46 tokens/sec, 1–3.5 s per answer |
+| PII redaction | [Presidio](https://github.com/microsoft/presidio) + spaCy `en_core_web_lg` | spaCy NER + rules, local | MIT | ~590 MB | measured live in Metrics tab |
+
+PII redaction (names, emails, phones, IDs → typed tags like `[PERSON]`) runs
+**fully locally** — Presidio is an offline library, not a service; nothing is
+sent anywhere to be "cleaned."
 
 The in-app **Metrics tab** measures all of these live on whatever machine the
 app is running on.
@@ -112,4 +117,5 @@ Every model and library Keptra uses, with licenses:
 - [ChromaDB](https://github.com/chroma-core/chroma) (Apache-2.0) — local vector store
 - [Ollama](https://ollama.com) (MIT) with [Qwen2.5 3B](https://ollama.com/library/qwen2.5) (Apache-2.0) — local LLM
 - [Moondream2](https://ollama.com/library/moondream) (Apache-2.0) — image captioning
+- [Microsoft Presidio](https://github.com/microsoft/presidio) (MIT) with [spaCy](https://spacy.io) `en_core_web_lg` (MIT) — PII detection & redaction
 - [Streamlit](https://streamlit.io) (Apache-2.0) — UI · [pypdf](https://github.com/py-pdf/pypdf) (BSD-3-Clause) · [python-docx](https://github.com/python-openxml/python-docx) (MIT) · [OpenCV](https://opencv.org) (Apache-2.0) · [NumPy](https://numpy.org) (BSD-3-Clause)
