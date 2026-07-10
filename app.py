@@ -3,8 +3,12 @@
 Streamlit entry point. Run with: streamlit run app.py
 """
 
+import tempfile
+from pathlib import Path
+
 import streamlit as st
 
+from keptra.ingest.audio import transcribe
 from keptra.query.answer import ask_llm
 
 st.set_page_config(page_title="Keptra", page_icon="🧠", layout="wide")
@@ -21,7 +25,23 @@ upload_tab, library_tab, ask_tab, metrics_tab = st.tabs(
 
 with upload_tab:
     st.subheader("Upload")
-    st.info("Coming soon: drop in voice notes, documents, and images.")
+    audio_file = st.file_uploader(
+        "Voice note (.mp3 / .wav / .m4a)", type=["mp3", "wav", "m4a"]
+    )
+    if audio_file is not None:
+        suffix = Path(audio_file.name).suffix
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(audio_file.getbuffer())
+            tmp_path = tmp.name
+        with st.spinner("Transcribing locally (first run loads Whisper)…"):
+            result = transcribe(tmp_path)
+        Path(tmp_path).unlink(missing_ok=True)
+        st.success(
+            f"Transcribed **{audio_file.name}** "
+            f"({result['duration']:.0f}s of audio, fully offline)"
+        )
+        for seg in result["segments"]:
+            st.markdown(f"`[{seg['start']}–{seg['end']}]` {seg['text']}")
 
 with library_tab:
     st.subheader("Library")
