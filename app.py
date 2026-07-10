@@ -4,10 +4,13 @@ Streamlit entry point. Run with: streamlit run app.py
 """
 
 import tempfile
+from datetime import datetime
 from pathlib import Path
 
 import streamlit as st
 
+from keptra.index.chunk import chunk_segments, chunk_text
+from keptra.index.store import add_chunks
 from keptra.ingest.audio import transcribe
 from keptra.ingest.documents import extract_text
 from keptra.query.answer import ask_llm
@@ -37,6 +40,7 @@ with upload_tab:
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             tmp.write(uploaded.getbuffer())
             tmp_path = tmp.name
+        created_at = datetime.now().isoformat(timespec="seconds")
         if suffix in AUDIO_EXTENSIONS:
             with st.spinner("Transcribing locally (first run loads Whisper)…"):
                 result = transcribe(tmp_path)
@@ -46,14 +50,37 @@ with upload_tab:
             )
             for seg in result["segments"]:
                 st.markdown(f"`[{seg['start']}–{seg['end']}]` {seg['text']}")
+            chunks = chunk_segments(
+                result["segments"],
+                {
+                    "source_type": "audio",
+                    "source_name": uploaded.name,
+                    "created_at": created_at,
+                },
+            )
         else:
             with st.spinner("Extracting text locally…"):
                 items = extract_text(tmp_path)
             st.success(f"Extracted **{uploaded.name}** ({len(items)} part(s))")
+            chunks = []
             for item in items:
                 label = f"Page {item['page']}" if item["page"] else "Full text"
                 with st.expander(label, expanded=True):
                     st.text(item["text"])
+                chunks.extend(
+                    chunk_text(
+                        item["text"],
+                        {
+                            "source_type": "document",
+                            "source_name": uploaded.name,
+                            "page": item["page"],
+                            "created_at": created_at,
+                        },
+                    )
+                )
+        with st.spinner("Indexing locally (chunk → embed → store)…"):
+            indexed = add_chunks(chunks)
+        st.toast(f"Indexed {indexed} chunk(s) from {uploaded.name} 🧠", icon="✅")
         Path(tmp_path).unlink(missing_ok=True)
 
 with library_tab:
