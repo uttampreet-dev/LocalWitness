@@ -10,7 +10,7 @@ from pathlib import Path
 import streamlit as st
 
 from keptra.index.chunk import chunk_segments, chunk_text
-from keptra.index.store import add_chunks, list_sources, query
+from keptra.index.store import add_chunks, clear, list_sources, query
 from keptra.ingest.audio import transcribe
 from keptra.ingest.documents import extract_text
 from keptra.query.answer import answer_stream
@@ -83,6 +83,14 @@ with upload_tab:
             indexed = add_chunks(chunks)
         st.toast(f"Indexed {indexed} chunk(s) from {uploaded.name} 🧠", icon="✅")
         Path(tmp_path).unlink(missing_ok=True)
+
+    st.divider()
+    if st.button(
+        "🗑️ Reset index",
+        help="Delete every indexed chunk from the local Chroma store (files are untouched).",
+    ):
+        removed = clear()
+        st.toast(f"Index cleared — {removed} chunk(s) removed.", icon="🗑️")
 
 with library_tab:
     st.subheader("Library")

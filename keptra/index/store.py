@@ -80,6 +80,15 @@ def count() -> int:
     return _get_collection().count()
 
 
+def clear() -> int:
+    """Delete every indexed chunk from the local store; returns how many."""
+    collection = _get_collection()
+    ids = collection.get(include=[])["ids"]
+    if ids:
+        collection.delete(ids=ids)
+    return len(ids)
+
+
 def list_sources() -> list[dict]:
     """All indexed sources grouped by source_name, newest first.
 
