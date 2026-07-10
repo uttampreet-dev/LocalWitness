@@ -61,6 +61,21 @@ For a real 200–400-image dataset, run the same script on Google Colab (free
 T4 GPU), then copy the exported weights from `models/` back — where you train
 doesn't matter, **inference stays 100% local**.
 
+### Optimization: INT8 quantization
+
+[scripts/quantize_embeddings.py](scripts/quantize_embeddings.py) exports the
+embedding model to ONNX and applies dynamic INT8 quantization — measured on
+the same machine as everything else:
+
+| all-MiniLM-L6-v2 | size | ms/query (single) |
+|---|---|---|
+| PyTorch (app default) | 91.6 MB | 4.7 |
+| ONNX INT8 (CPU) | 22.9 MB | 1.4 |
+
+**Footprint 4.0× smaller, single-query latency 3.5× faster** — the LLM
+(qwen2.5:3b) is likewise already INT4-quantized GGUF via Ollama (~6 GB fp16 →
+~1.9 GB on disk).
+
 ### Privacy receipts
 
 We didn't just claim privacy — we audited the dependency chain for network

@@ -24,7 +24,8 @@ presidio-analyzer==2.2.355    # local PII detection
 presidio-anonymizer==2.2.355  # local PII redaction
 spacy==3.8.2                  # backend for Presidio (also run: python -m spacy download en_core_web_lg)
 
-# ---- Optional optimization experiments (skip unless you have spare time) ----
-# onnx==1.17.0
-# onnxruntime==1.20.1
-# optimum==1.23.3
+# ---- Optional optimization experiments ----
+onnx==1.17.0
+onnxruntime==1.20.1
+optimum[onnxruntime]>=2.1.0   # 1.x export path breaks against newer torch
+onnxscript==0.7.1             # required by the torch>=2.5 ONNX exporter
