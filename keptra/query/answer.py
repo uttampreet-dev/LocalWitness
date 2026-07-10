@@ -3,7 +3,12 @@
 import time
 from collections.abc import Iterator
 
+import httpx
 import ollama
+
+# Errors that actually mean "the Ollama server is unreachable/unhappy" —
+# anything else is a bug in our code and must surface as itself.
+OLLAMA_ERRORS = (httpx.HTTPError, ollama.RequestError, ollama.ResponseError, ConnectionError)
 
 from keptra import metrics
 from keptra.query.retrieve import cite
@@ -97,7 +102,7 @@ def answer_stream(question: str, hits: list[dict]) -> Iterator[str]:
                 eval_duration = getattr(part, "eval_duration", 0) or 0
         if buffering and not buffer.strip().startswith(FALLBACK):
             yield buffer
-    except Exception as exc:
+    except OLLAMA_ERRORS as exc:
         yield f"{OLLAMA_HELP}\n\nDetails: {exc}"
         return
     metrics.record_timing("llm_total_s", time.perf_counter() - start)
@@ -114,5 +119,5 @@ def ask_llm(prompt: str) -> str:
             messages=[{"role": "user", "content": prompt}],
         )
         return response["message"]["content"]
-    except Exception as exc:
+    except OLLAMA_ERRORS as exc:
         return f"{OLLAMA_HELP}\n\nDetails: {exc}"

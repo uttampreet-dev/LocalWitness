@@ -69,7 +69,7 @@ def query(text: str, k: int = 5) -> list[dict]:
         {
             "id": result["ids"][0][i],
             "text": result["documents"][0][i],
-            "metadata": result["metadatas"][0][i],
+            "metadata": result["metadatas"][0][i] or {},
             "distance": result["distances"][0][i],
         }
         for i in range(len(result["ids"][0]))
