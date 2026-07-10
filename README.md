@@ -33,6 +33,17 @@ app is running on.
 
 ## Setup
 
+Prereqs: Python 3.11 and [Ollama](https://ollama.com) installed and running.
+
+```bash
+git clone <your-repo> && cd keptra
+python3.11 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+ollama pull qwen2.5:3b      # local LLM for cited answers
+ollama pull moondream       # local VLM for image captioning
+streamlit run app.py
+```
+
 ## Usage
 
 ## Demo

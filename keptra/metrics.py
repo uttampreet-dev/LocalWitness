@@ -65,6 +65,15 @@ MODEL_SPECS = [
         "perf_label": "ms per query (incl. embedding)",
     },
     {
+        "name": "Moondream2 via Ollama",
+        "task": "image captioning + text-in-image (VLM)",
+        "source": "https://ollama.com/library/moondream",
+        "license": "Apache-2.0",
+        "size": "~1.7 GB",
+        "perf_key": "caption_ms_per_image",
+        "perf_label": "ms per image",
+    },
+    {
         "name": "qwen2.5:3b (INT4 GGUF) via Ollama",
         "task": "RAG answering (local LLM)",
         "source": "https://ollama.com/library/qwen2.5",

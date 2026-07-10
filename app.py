@@ -21,10 +21,12 @@ from keptra.index.store import (
 from keptra.metrics import MODEL_SPECS, get_metrics, latest
 from keptra.ingest.audio import transcribe
 from keptra.ingest.documents import extract_text
-from keptra.query.answer import answer_stream
+from keptra.ingest.images import caption
+from keptra.query.answer import OLLAMA_ERRORS, answer_stream
 from keptra.query.retrieve import cite, retrieve
 
 AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a"}
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 
 st.set_page_config(page_title="Keptra", page_icon="🧠", layout="wide")
 
@@ -41,8 +43,9 @@ upload_tab, library_tab, ask_tab, metrics_tab = st.tabs(
 with upload_tab:
     st.subheader("Upload")
     uploaded = st.file_uploader(
-        "Voice note or document (.mp3 / .wav / .m4a / .pdf / .txt / .md)",
-        type=["mp3", "wav", "m4a", "pdf", "txt", "md"],
+        "Voice note, document, or photo "
+        "(.mp3 / .wav / .m4a / .pdf / .txt / .md / .jpg / .png)",
+        type=["mp3", "wav", "m4a", "pdf", "txt", "md", "jpg", "jpeg", "png"],
     )
     if uploaded is not None:
         suffix = Path(uploaded.name).suffix.lower()
@@ -67,6 +70,29 @@ with upload_tab:
                     "created_at": created_at,
                 },
             )
+        elif suffix in IMAGE_EXTENSIONS:
+            with st.spinner("Captioning locally (Moondream)…"):
+                try:
+                    described = caption(tmp_path)
+                except OLLAMA_ERRORS as exc:
+                    described = None
+                    st.error(
+                        "Couldn't caption: is Ollama running and moondream "
+                        f"pulled (`ollama pull moondream`)?\n\nDetails: {exc}"
+                    )
+            chunks = []
+            if described:
+                st.image(tmp_path, width=360)
+                st.success(f"Captioned **{uploaded.name}** (fully offline)")
+                st.markdown(f"> {described}")
+                chunks = chunk_text(
+                    described,
+                    {
+                        "source_type": "image",
+                        "source_name": uploaded.name,
+                        "created_at": created_at,
+                    },
+                )
         else:
             with st.spinner("Extracting text locally…"):
                 items = extract_text(tmp_path)
@@ -87,16 +113,18 @@ with upload_tab:
                         },
                     )
                 )
-        with st.spinner("Indexing locally (chunk → embed → store)…"):
-            replaced = delete_source(uploaded.name)
-            indexed = add_chunks(chunks)
+        replaced = indexed = 0
+        if chunks:
+            with st.spinner("Indexing locally (chunk → embed → store)…"):
+                replaced = delete_source(uploaded.name)
+                indexed = add_chunks(chunks)
         if replaced:
             st.toast(
                 f"Re-indexed {uploaded.name}: {indexed} chunk(s) "
                 f"(replaced {replaced} old)",
                 icon="♻️",
             )
-        else:
+        elif indexed:
             st.toast(f"Indexed {indexed} chunk(s) from {uploaded.name} 🧠", icon="✅")
         Path(tmp_path).unlink(missing_ok=True)
 
