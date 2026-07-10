@@ -2,6 +2,9 @@
 
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 100
+# Audio gets smaller chunks: spoken notes hop between topics quickly, and a
+# tighter window keeps each chunk's embedding on one topic (sharper retrieval).
+SEGMENT_CHUNK_SIZE = 300
 
 
 def chunk_text(
@@ -38,7 +41,7 @@ def chunk_text(
 def chunk_segments(
     segments: list[dict],
     source_meta: dict,
-    chunk_size: int = CHUNK_SIZE,
+    chunk_size: int = SEGMENT_CHUNK_SIZE,
 ) -> list[dict]:
     """Group Whisper segments into ~chunk_size chunks.
 

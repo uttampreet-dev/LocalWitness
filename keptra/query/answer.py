@@ -52,9 +52,11 @@ def build_prompt(question: str, hits: list[dict]) -> str:
     example = cite(hits[0]["metadata"]) if hits else "source"
     return (
         f"Context:\n{context}\n\nQuestion: {question}\n\n"
-        "Answer using only the context above. End every sentence with its "
-        f"source citation in square brackets, e.g. \"…July 24th [{example}].\" "
-        "Copy the labels exactly as written above."
+        "Answer using only the context above. End every sentence with the "
+        f"citation of the chunk it came from, like [{example}]. Valid "
+        "citations are ONLY the bracketed labels that precede each context "
+        "chunk above — copy them exactly, never invent one, and never cite a "
+        "file name that merely appears inside the text."
     )
 
 
