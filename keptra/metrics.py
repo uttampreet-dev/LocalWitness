@@ -74,6 +74,15 @@ MODEL_SPECS = [
         "perf_label": "ms per image",
     },
     {
+        "name": "YOLOv8n (Ultralytics)",
+        "task": "person detection → privacy blur on export",
+        "source": "https://github.com/ultralytics/ultralytics",
+        "license": "AGPL-3.0",
+        "size": "~6 MB",
+        "perf_key": "blur_ms_per_image",
+        "perf_label": "ms per image",
+    },
+    {
         "name": "qwen2.5:3b (INT4 GGUF) via Ollama",
         "task": "RAG answering (local LLM)",
         "source": "https://ollama.com/library/qwen2.5",

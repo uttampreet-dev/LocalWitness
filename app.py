@@ -71,15 +71,19 @@ with upload_tab:
                 },
             )
         elif suffix in IMAGE_EXTENSIONS:
-            with st.spinner("Captioning locally (Moondream)…"):
-                try:
-                    described = caption(tmp_path)
-                except OLLAMA_ERRORS as exc:
-                    described = None
-                    st.error(
-                        "Couldn't caption: is Ollama running and moondream "
-                        f"pulled (`ollama pull moondream`)?\n\nDetails: {exc}"
-                    )
+            caption_cache = st.session_state.setdefault("caption_cache", {})
+            cache_key = f"{uploaded.name}:{uploaded.size}"
+            described = caption_cache.get(cache_key)
+            if described is None:
+                with st.spinner("Captioning locally (Moondream)…"):
+                    try:
+                        described = caption(tmp_path)
+                        caption_cache[cache_key] = described
+                    except OLLAMA_ERRORS as exc:
+                        st.error(
+                            "Couldn't caption: is Ollama running and moondream "
+                            f"pulled (`ollama pull moondream`)?\n\nDetails: {exc}"
+                        )
             chunks = []
             if described:
                 st.image(tmp_path, width=360)
@@ -93,6 +97,21 @@ with upload_tab:
                         "created_at": created_at,
                     },
                 )
+                if st.button(
+                    "🛡️ Export (privacy-safe)",
+                    help="Save a copy to exports/ with detected people blurred (YOLOv8n, local).",
+                ):
+                    from keptra.privacy.blur import blur_people
+
+                    exports_dir = Path("exports")
+                    exports_dir.mkdir(exist_ok=True)
+                    export_path = exports_dir / f"{Path(uploaded.name).stem}_blurred{suffix}"
+                    with st.spinner("Detecting and blurring people locally…"):
+                        n_blurred = blur_people(tmp_path, str(export_path))
+                    st.success(
+                        f"Exported **{export_path}** — {n_blurred} region(s) blurred."
+                    )
+                    st.image(str(export_path), width=360)
         else:
             with st.spinner("Extracting text locally…"):
                 items = extract_text(tmp_path)
