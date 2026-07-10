@@ -19,9 +19,20 @@ def _get_model() -> SentenceTransformer:
     if _model is None:
         device = "mps" if torch.backends.mps.is_available() else "cpu"
         start = time.perf_counter()
-        _model = SentenceTransformer(
-            EMBED_MODEL, device=device, cache_folder=str(MODELS_DIR)
-        )
+        try:
+            # Offline-first: never touch the network once weights are cached
+            # (the HF hub otherwise phones home to revalidate on every load).
+            _model = SentenceTransformer(
+                EMBED_MODEL,
+                device=device,
+                cache_folder=str(MODELS_DIR),
+                local_files_only=True,
+            )
+        except Exception:
+            # First run only: weights not downloaded yet.
+            _model = SentenceTransformer(
+                EMBED_MODEL, device=device, cache_folder=str(MODELS_DIR)
+            )
         metrics.record_timing("embed_load_s", time.perf_counter() - start)
         metrics.record_model(
             f"sentence-transformers ({EMBED_MODEL})",

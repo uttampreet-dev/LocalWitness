@@ -13,18 +13,10 @@ from keptra.index.chunk import chunk_segments, chunk_text
 from keptra.index.store import add_chunks, list_sources, query
 from keptra.ingest.audio import transcribe
 from keptra.ingest.documents import extract_text
-from keptra.query.answer import ask_llm
+from keptra.query.answer import answer_stream
+from keptra.query.retrieve import cite, retrieve
 
 AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a"}
-
-
-def cite(meta: dict) -> str:
-    """Human-readable citation for a chunk: source plus timestamp/page."""
-    if meta.get("timestamp"):
-        return f"{meta['source_name']} @ {meta['timestamp']}"
-    if meta.get("page"):
-        return f"{meta['source_name']}, page {meta['page']}"
-    return meta["source_name"]
 
 st.set_page_config(page_title="Keptra", page_icon="🧠", layout="wide")
 
@@ -128,11 +120,23 @@ with library_tab:
 
 with ask_tab:
     st.subheader("Ask")
-    st.caption("Raw local-LLM passthrough for now — proves on-device inference works.")
-    question = st.text_input("Your question", placeholder="Say hello to your local LLM…")
+    st.caption("Answers come only from your indexed notes — every claim cited.")
+    question = st.text_input(
+        "Your question",
+        placeholder="What did she say the deadline was, and which document mentions the payment?",
+    )
     if st.button("Ask", type="primary") and question.strip():
-        with st.spinner("Thinking locally…"):
-            st.markdown(ask_llm(question))
+        with st.spinner("Searching your notes…"):
+            hits = retrieve(question)
+        if not hits:
+            st.warning("Nothing indexed yet — upload a voice note or document first.")
+        else:
+            st.write_stream(answer_stream(question, hits))
+            with st.expander(f"Sources — {len(hits)} chunk(s) used", expanded=False):
+                for hit in hits:
+                    st.markdown(f"**{cite(hit['metadata'])}**")
+                    st.markdown(f"> {hit['text']}")
+                    st.divider()
 
 with metrics_tab:
     st.subheader("Metrics")
