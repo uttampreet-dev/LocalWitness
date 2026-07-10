@@ -10,12 +10,21 @@ from pathlib import Path
 import streamlit as st
 
 from keptra.index.chunk import chunk_segments, chunk_text
-from keptra.index.store import add_chunks
+from keptra.index.store import add_chunks, list_sources, query
 from keptra.ingest.audio import transcribe
 from keptra.ingest.documents import extract_text
 from keptra.query.answer import ask_llm
 
 AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a"}
+
+
+def cite(meta: dict) -> str:
+    """Human-readable citation for a chunk: source plus timestamp/page."""
+    if meta.get("timestamp"):
+        return f"{meta['source_name']} @ {meta['timestamp']}"
+    if meta.get("page"):
+        return f"{meta['source_name']}, page {meta['page']}"
+    return meta["source_name"]
 
 st.set_page_config(page_title="Keptra", page_icon="🧠", layout="wide")
 
@@ -85,7 +94,37 @@ with upload_tab:
 
 with library_tab:
     st.subheader("Library")
-    st.info("Coming soon: everything you've indexed, in one place.")
+    search = st.text_input(
+        "Semantic search", placeholder="Try something vague — e.g. 'money stuff'…"
+    )
+    if search.strip():
+        hits = query(search, k=5)
+        if not hits:
+            st.warning("No matches — is anything indexed yet?")
+        for hit in hits:
+            similarity = 1 - hit["distance"]
+            st.markdown(f"**{cite(hit['metadata'])}** · similarity `{similarity:.2f}`")
+            st.markdown(f"> {hit['text']}")
+        st.divider()
+
+    sources = list_sources()
+    if not sources:
+        st.info("Nothing indexed yet — add voice notes or documents in Upload.")
+    else:
+        st.caption(f"{len(sources)} source(s), {sum(s['chunks'] for s in sources)} chunk(s) — all stored locally.")
+        st.dataframe(
+            [
+                {
+                    "Source": s["source_name"],
+                    "Type": s["source_type"],
+                    "Added": s["created_at"],
+                    "Chunks": s["chunks"],
+                }
+                for s in sources
+            ],
+            use_container_width=True,
+            hide_index=True,
+        )
 
 with ask_tab:
     st.subheader("Ask")

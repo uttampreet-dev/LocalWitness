@@ -78,3 +78,28 @@ def query(text: str, k: int = 5) -> list[dict]:
 
 def count() -> int:
     return _get_collection().count()
+
+
+def list_sources() -> list[dict]:
+    """All indexed sources grouped by source_name, newest first.
+
+    Returns [{source_name, source_type, created_at, chunks}].
+    """
+    collection = _get_collection()
+    if collection.count() == 0:
+        return []
+    result = collection.get(include=["metadatas"])
+    sources: dict[str, dict] = {}
+    for meta in result["metadatas"]:
+        entry = sources.setdefault(
+            meta["source_name"],
+            {
+                "source_name": meta["source_name"],
+                "source_type": meta.get("source_type", "unknown"),
+                "created_at": meta.get("created_at", ""),
+                "chunks": 0,
+            },
+        )
+        entry["chunks"] += 1
+        entry["created_at"] = min(entry["created_at"], meta.get("created_at", "")) or meta.get("created_at", "")
+    return sorted(sources.values(), key=lambda s: s["created_at"], reverse=True)
