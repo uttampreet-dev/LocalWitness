@@ -9,7 +9,10 @@ from pathlib import Path
 import streamlit as st
 
 from keptra.ingest.audio import transcribe
+from keptra.ingest.documents import extract_text
 from keptra.query.answer import ask_llm
+
+AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a"}
 
 st.set_page_config(page_title="Keptra", page_icon="🧠", layout="wide")
 
@@ -25,23 +28,33 @@ upload_tab, library_tab, ask_tab, metrics_tab = st.tabs(
 
 with upload_tab:
     st.subheader("Upload")
-    audio_file = st.file_uploader(
-        "Voice note (.mp3 / .wav / .m4a)", type=["mp3", "wav", "m4a"]
+    uploaded = st.file_uploader(
+        "Voice note or document (.mp3 / .wav / .m4a / .pdf / .txt / .md)",
+        type=["mp3", "wav", "m4a", "pdf", "txt", "md"],
     )
-    if audio_file is not None:
-        suffix = Path(audio_file.name).suffix
+    if uploaded is not None:
+        suffix = Path(uploaded.name).suffix.lower()
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-            tmp.write(audio_file.getbuffer())
+            tmp.write(uploaded.getbuffer())
             tmp_path = tmp.name
-        with st.spinner("Transcribing locally (first run loads Whisper)…"):
-            result = transcribe(tmp_path)
+        if suffix in AUDIO_EXTENSIONS:
+            with st.spinner("Transcribing locally (first run loads Whisper)…"):
+                result = transcribe(tmp_path)
+            st.success(
+                f"Transcribed **{uploaded.name}** "
+                f"({result['duration']:.0f}s of audio, fully offline)"
+            )
+            for seg in result["segments"]:
+                st.markdown(f"`[{seg['start']}–{seg['end']}]` {seg['text']}")
+        else:
+            with st.spinner("Extracting text locally…"):
+                items = extract_text(tmp_path)
+            st.success(f"Extracted **{uploaded.name}** ({len(items)} part(s))")
+            for item in items:
+                label = f"Page {item['page']}" if item["page"] else "Full text"
+                with st.expander(label, expanded=True):
+                    st.text(item["text"])
         Path(tmp_path).unlink(missing_ok=True)
-        st.success(
-            f"Transcribed **{audio_file.name}** "
-            f"({result['duration']:.0f}s of audio, fully offline)"
-        )
-        for seg in result["segments"]:
-            st.markdown(f"`[{seg['start']}–{seg['end']}]` {seg['text']}")
 
 with library_tab:
     st.subheader("Library")
