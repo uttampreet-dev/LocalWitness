@@ -29,6 +29,20 @@ numbers below are from that machine:
 The in-app **Metrics tab** measures all of these live on whatever machine the
 app is running on.
 
+### Privacy receipts
+
+We didn't just claim privacy — we audited the dependency chain for network
+calls and closed every leak we found. Even our dependencies kept trying to
+call home, and we shut every one of them off:
+
+1. **ChromaDB** ships with anonymized telemetry enabled — disabled explicitly
+   in our client settings ([keptra/index/store.py](keptra/index/store.py)).
+2. **HuggingFace hub** revalidates cached models over the network on every
+   load — loads are forced offline-first once weights are downloaded
+   ([keptra/index/embed.py](keptra/index/embed.py)).
+3. **Ultralytics** ships with usage analytics ("sync") enabled — disabled at
+   import time ([keptra/privacy/blur.py](keptra/privacy/blur.py)).
+
 ## Tech stack
 
 ## Setup
@@ -54,4 +68,21 @@ streamlit run app.py
 
 ## Limitations & future scope
 
+- **Privacy blur has a detection floor:** tiny faces cropped at the image
+  border can fall below what YOLOv8n (a nano model) can detect — one such
+  bystander face survived blurring in our test photo. Review exports before
+  sharing; a larger detection model would raise the floor at the cost of
+  speed.
+
 ## Credits
+
+Every model and library Keptra uses, with licenses:
+
+- **Object detection uses [Ultralytics YOLOv8n](https://github.com/ultralytics/ultralytics), licensed AGPL-3.0.**
+  (Keptra's own code remains MIT — we use the AGPL library, we don't relicense it.)
+- [faster-whisper](https://github.com/SYSTRAN/faster-whisper) (MIT) — speech-to-text, Whisper `base` weights by OpenAI (MIT)
+- [sentence-transformers](https://www.sbert.net/) / [all-MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) (Apache-2.0) — embeddings
+- [ChromaDB](https://github.com/chroma-core/chroma) (Apache-2.0) — local vector store
+- [Ollama](https://ollama.com) (MIT) with [Qwen2.5 3B](https://ollama.com/library/qwen2.5) (Apache-2.0) — local LLM
+- [Moondream2](https://ollama.com/library/moondream) (Apache-2.0) — image captioning
+- [Streamlit](https://streamlit.io) (Apache-2.0) — UI · [pypdf](https://github.com/py-pdf/pypdf) (BSD-3-Clause) · [python-docx](https://github.com/python-openxml/python-docx) (MIT) · [OpenCV](https://opencv.org) (Apache-2.0) · [NumPy](https://numpy.org) (BSD-3-Clause)
