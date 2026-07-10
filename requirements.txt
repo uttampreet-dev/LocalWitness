@@ -1,8 +1,30 @@
-streamlit
-faster-whisper
-sentence-transformers
-chromadb
-pypdf
-python-docx
-ollama
-numpy
+# Keptra — Python dependencies
+# Python 3.11 on macOS (Apple Silicon). Install with:
+#   python3.11 -m venv .venv && source .venv/bin/activate
+#   pip install -r requirements.txt
+#
+# Versions are pinned to known-good releases as of mid-2026. If pip resolves a
+# conflict, loosen the pin (e.g. change == to >=) rather than fighting it.
+
+# ---- Phase 1: CORE (required) ----
+streamlit==1.41.1              # local web UI
+faster-whisper==1.1.1          # speech-to-text (CTranslate2, fast on Apple Silicon)
+sentence-transformers==3.3.1   # embeddings (all-MiniLM-L6-v2)
+chromadb==0.5.23               # local persistent vector store
+ollama==0.4.5                  # python client for the local Ollama LLM server
+pypdf==5.1.0                   # PDF text extraction
+python-docx==1.1.2             # .docx text extraction
+numpy==1.26.4                  # pinned <2 for broad compatibility with the above
+
+# ---- Phase 2: BONUS (uncomment only when you reach that step) ----
+# Moondream image captioning is pulled via Ollama (no pip dep): `ollama pull moondream`
+# ultralytics==8.3.55          # YOLOv8n object/face detection for privacy blur
+# opencv-python==4.10.0.84      # image read/write + Gaussian blur for export
+# presidio-analyzer==2.2.355    # local PII detection
+# presidio-anonymizer==2.2.355  # local PII redaction
+# spacy==3.8.2                  # backend for Presidio (also run: python -m spacy download en_core_web_lg)
+
+# ---- Optional optimization experiments (skip unless you have spare time) ----
+# onnx==1.17.0
+# onnxruntime==1.20.1
+# optimum==1.23.3
