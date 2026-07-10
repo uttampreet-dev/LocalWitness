@@ -10,7 +10,14 @@ from pathlib import Path
 import streamlit as st
 
 from keptra.index.chunk import chunk_segments, chunk_text
-from keptra.index.store import add_chunks, clear, count, list_sources, query
+from keptra.index.store import (
+    add_chunks,
+    clear,
+    count,
+    delete_source,
+    list_sources,
+    query,
+)
 from keptra.metrics import MODEL_SPECS, get_metrics, latest
 from keptra.ingest.audio import transcribe
 from keptra.ingest.documents import extract_text
@@ -81,8 +88,16 @@ with upload_tab:
                     )
                 )
         with st.spinner("Indexing locally (chunk → embed → store)…"):
+            replaced = delete_source(uploaded.name)
             indexed = add_chunks(chunks)
-        st.toast(f"Indexed {indexed} chunk(s) from {uploaded.name} 🧠", icon="✅")
+        if replaced:
+            st.toast(
+                f"Re-indexed {uploaded.name}: {indexed} chunk(s) "
+                f"(replaced {replaced} old)",
+                icon="♻️",
+            )
+        else:
+            st.toast(f"Indexed {indexed} chunk(s) from {uploaded.name} 🧠", icon="✅")
         Path(tmp_path).unlink(missing_ok=True)
 
     st.divider()

@@ -80,6 +80,18 @@ def count() -> int:
     return _get_collection().count()
 
 
+def delete_source(source_name: str) -> int:
+    """Remove every chunk of one source; returns how many were deleted.
+
+    Called before re-indexing a file so re-uploads replace instead of stack.
+    """
+    collection = _get_collection()
+    ids = collection.get(where={"source_name": source_name}, include=[])["ids"]
+    if ids:
+        collection.delete(ids=ids)
+    return len(ids)
+
+
 def clear() -> int:
     """Delete every indexed chunk from the local store; returns how many."""
     collection = _get_collection()
