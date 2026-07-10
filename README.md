@@ -115,6 +115,12 @@ streamlit run app.py
 
 ## Limitations & future scope
 
+- **Redaction covers content; filenames are preserved for citation
+  integrity.** A citation like `[sarah_followup_call.m4a @ 00:00]` still
+  reveals a name through the filename even when the answer body is redacted.
+  Citations are the product's spine, so hiding them would break
+  verifiability — mind what you name your files, or rename sources before
+  indexing anything you plan to share redacted.
 - **Privacy blur has a detection floor:** tiny faces cropped at the image
   border can fall below what YOLOv8n (a nano model) can detect — one such
   bystander face survived blurring in our test photo. Review exports before
