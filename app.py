@@ -150,7 +150,11 @@ with ask_tab:
 with metrics_tab:
     st.subheader("Metrics")
     st.markdown(
-        "**All inference runs locally on Apple Silicon — no cloud, no GPU server.**"
+        "**All inference runs locally on the user's own device — no cloud, no GPU server.**"
+    )
+    st.caption(
+        "Tested on Apple Silicon (M-series MacBook Air); runs anywhere with "
+        "Python + Ollama."
     )
 
     sources = list_sources()

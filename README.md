@@ -8,13 +8,16 @@
 
 ## On-Device AI usage
 
-**All inference runs locally on Apple Silicon — no cloud, no GPU server.** The
-whole AI core (speech-to-text, embeddings, vector search, LLM answering) works
-with Wi-Fi off. Nothing ever leaves the machine: no cloud AI APIs, ChromaDB
-telemetry is explicitly disabled, and the HuggingFace hub is only touched once
-to download weights (loads are offline-first afterwards).
+**All inference runs locally on the user's own device — no cloud, no GPU
+server.** The whole AI core (speech-to-text, embeddings, vector search, LLM
+answering) works with Wi-Fi off. Nothing ever leaves the machine: no cloud AI
+APIs, ChromaDB telemetry is explicitly disabled, and the HuggingFace hub is
+only touched once to download weights (loads are offline-first afterwards).
 
-Measured on a MacBook Air (M-series), CPU/MPS/Metal:
+Keptra is cross-platform: anything that runs Python + Ollama can run it.
+
+**Tested on:** Apple Silicon (M-series MacBook Air), CPU/MPS/Metal — the
+numbers below are from that machine:
 
 | Stage | Model | Runtime | License | Approx size | Measured |
 |---|---|---|---|---|---|
