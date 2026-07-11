@@ -10,8 +10,8 @@ import ollama
 # anything else is a bug in our code and must surface as itself.
 OLLAMA_ERRORS = (httpx.HTTPError, ollama.RequestError, ollama.ResponseError, ConnectionError)
 
-from keptra import metrics
-from keptra.query.retrieve import cite
+from localwitness import metrics
+from localwitness.query.retrieve import cite
 
 LLM_MODEL = "qwen2.5:3b"
 
@@ -22,7 +22,7 @@ OLLAMA_HELP = (
 )
 
 SYSTEM_PROMPT = (
-    "You are Keptra, a private, offline second brain. Answer ONLY using the "
+    "You are LocalWitness, a private, offline second brain. Answer ONLY using the "
     "provided context. Every claim must carry a citation in [brackets], "
     "copying the source label exactly as given, e.g. [interview_note.m4a @ "
     "00:00] or [vendor_contract.pdf, page 2] — no sentence without one. When "

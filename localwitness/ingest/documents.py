@@ -5,7 +5,7 @@ from pathlib import Path
 
 from pypdf import PdfReader
 
-from keptra import metrics
+from localwitness import metrics
 
 SUPPORTED_EXTENSIONS = {".pdf", ".txt", ".md"}
 

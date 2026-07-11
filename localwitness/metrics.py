@@ -1,4 +1,4 @@
-"""Metrics: timing, model, and usage measurements for Keptra.
+"""Metrics: timing, model, and usage measurements for LocalWitness.
 
 A simple module-level singleton. Every model records its load time, per-call
 timings, and identity here; the Metrics tab renders whatever has accumulated.

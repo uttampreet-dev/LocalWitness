@@ -5,7 +5,7 @@ from pathlib import Path
 
 from faster_whisper import WhisperModel
 
-from keptra import metrics
+from localwitness import metrics
 
 WHISPER_MODEL = "base"
 MODELS_DIR = Path(__file__).resolve().parents[2] / "models"

@@ -1,4 +1,4 @@
-/* Keptra design system — "private terminal meets precision instrument".
+/* LocalWitness design system — "private terminal meets precision instrument".
    Slate near-black surfaces, one teal accent, Inter for UI, JetBrains Mono
    for everything technical. Flat, hairline-separated, no cards, no glow. */
 
@@ -140,11 +140,12 @@ div[data-testid="stSidebarCollapseButton"] { display: none !important; }
 
 .kp-wordmark, .stMarkdown p.kp-wordmark {
   font-family: var(--mono);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.14em;
   color: var(--text);
   margin: 0.2rem 0 0 0;
+  white-space: nowrap;
 }
 .kp-mark svg {
   width: 14px;

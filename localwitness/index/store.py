@@ -12,11 +12,11 @@ from chromadb.config import Settings
 # failing) send attempt on startup — keep that noise out of the UI/logs.
 logging.getLogger("chromadb.telemetry.product.posthog").setLevel(logging.CRITICAL)
 
-from keptra import metrics
-from keptra.index.embed import embed
+from localwitness import metrics
+from localwitness.index.embed import embed
 
 CHROMA_PATH = Path(__file__).resolve().parents[2] / "chroma_db"
-COLLECTION_NAME = "keptra"
+COLLECTION_NAME = "keptra"  # unchanged: renaming would orphan the existing index
 
 _collection = None
 

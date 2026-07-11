@@ -1,4 +1,4 @@
-"""Keptra — a local, offline, private second brain.
+"""LocalWitness — a local, offline, private second brain.
 
 Streamlit entry point. Run with: streamlit run app.py
 """
@@ -12,9 +12,9 @@ from urllib.parse import urlparse
 
 import streamlit as st
 
-from keptra import ui
-from keptra.index.chunk import chunk_segments, chunk_text
-from keptra.index.store import (
+from localwitness import ui
+from localwitness.index.chunk import chunk_segments, chunk_text
+from localwitness.index.store import (
     add_chunks,
     clear,
     count,
@@ -22,12 +22,12 @@ from keptra.index.store import (
     list_sources,
     query,
 )
-from keptra.metrics import MODEL_SPECS, get_metrics, latest
-from keptra.ingest.audio import transcribe
-from keptra.ingest.documents import extract_text
-from keptra.ingest.images import caption
-from keptra.query.answer import OLLAMA_ERRORS, answer_stream
-from keptra.query.retrieve import retrieve
+from localwitness.metrics import MODEL_SPECS, get_metrics, latest
+from localwitness.ingest.audio import transcribe
+from localwitness.ingest.documents import extract_text
+from localwitness.ingest.images import caption
+from localwitness.query.answer import OLLAMA_ERRORS, answer_stream
+from localwitness.query.retrieve import retrieve
 
 AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a"}
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
@@ -65,7 +65,7 @@ def text_context_window(path: Path, chunk_text: str, window: int = 650):
     """(pre, match, post) around the cited chunk in the source text, using
     the same whitespace normalization the indexer used so the chunk is an
     exact substring. Returns None if the passage can't be located."""
-    from keptra.ingest.documents import _normalize
+    from localwitness.ingest.documents import _normalize
 
     text = _normalize(path.read_text(encoding="utf-8", errors="replace"))
     needle = chunk_text.strip()
@@ -87,7 +87,7 @@ def text_context_window(path: Path, chunk_text: str, window: int = 650):
     post = text[index + len(needle) : end] + (" …" if end < len(text) else "")
     return pre, needle, post
 
-st.set_page_config(page_title="Keptra", page_icon="🧠", layout="wide")
+st.set_page_config(page_title="LocalWitness", page_icon="🧠", layout="wide")
 ui.inject_css()
 
 page = ui.rail()
@@ -141,7 +141,7 @@ if page == "Upload":
                 "like [PERSON] — detected locally by Presidio.",
             )
             if redact_export:
-                from keptra.privacy.redact import redact
+                from localwitness.privacy.redact import redact
 
                 with st.spinner("Redacting locally (first run loads spaCy)…"):
                     transcript = redact(transcript)
@@ -198,7 +198,7 @@ if page == "Upload":
                     "Export privacy-safe copy",
                     help="Save a copy to exports/ with detected people blurred (YOLOv8n, local).",
                 ):
-                    from keptra.privacy.blur import blur_people
+                    from localwitness.privacy.blur import blur_people
 
                     exports_dir = Path("exports")
                     exports_dir.mkdir(exist_ok=True)
@@ -440,7 +440,7 @@ elif page == "Ask":
         elif redact_answer:
             # No streaming here: PII must never flash on screen before the
             # redaction pass runs over the completed answer.
-            from keptra.privacy.redact import redact
+            from localwitness.privacy.redact import redact
 
             with st.spinner("Answering + redacting locally…"):
                 full_answer = redact("".join(answer_stream(question, hits)))

@@ -1,7 +1,7 @@
-# Keptra
+# LocalWitness
 
 **Your memory, on-device.** A private, fully offline multimodal second brain:
-drop in voice notes, documents, and photos — Keptra transcribes, describes,
+drop in voice notes, documents, and photos — LocalWitness transcribes, describes,
 and indexes them locally, then answers questions with cited evidence. No
 cloud, no account, no network required.
 
@@ -20,7 +20,7 @@ laptop.
 
 ## Solution
 
-Keptra runs the entire pipeline on your machine: speech-to-text, image
+LocalWitness runs the entire pipeline on your machine: speech-to-text, image
 captioning, semantic indexing, and a local LLM that answers questions **only
 from your own material, with a citation on every claim** — `[source @
 timestamp]` or `[document, page N]` — and says "That's not in my notes"
@@ -51,12 +51,12 @@ We didn't just claim privacy — we audited the dependency chain for network
 calls and closed every leak we found:
 
 1. **ChromaDB** ships with anonymized telemetry enabled — disabled explicitly
-   in our client settings ([keptra/index/store.py](keptra/index/store.py)).
+   in our client settings ([localwitness/index/store.py](localwitness/index/store.py)).
 2. **HuggingFace hub** revalidates cached models over the network on every
    load — loads are forced offline-first once weights are downloaded
-   ([keptra/index/embed.py](keptra/index/embed.py)).
+   ([localwitness/index/embed.py](localwitness/index/embed.py)).
 3. **Ultralytics** ships with usage analytics ("sync") enabled — disabled at
-   import time ([keptra/privacy/blur.py](keptra/privacy/blur.py)).
+   import time ([localwitness/privacy/blur.py](localwitness/privacy/blur.py)).
 
 **Verify it yourself:** disconnect the network and run the full flow —
 upload, index, ask, cited answer. It all works. Zero outbound requests.
@@ -67,7 +67,7 @@ Python 3.11 · Streamlit (local UI) · faster-whisper · sentence-transformers
 (all-MiniLM-L6-v2) · ChromaDB · Ollama (qwen2.5:3b + moondream) · Ultralytics
 YOLOv8n · Microsoft Presidio + spaCy · pypdf.
 
-Cross-platform: anything that runs Python + Ollama can run Keptra. Tested on
+Cross-platform: anything that runs Python + Ollama can run LocalWitness. Tested on
 Apple Silicon (M-series MacBook Air, CPU/MPS/Metal) — all numbers below were
 measured on that machine; the in-app **Metrics tab** re-measures them live on
 whatever machine the app runs on.
@@ -127,7 +127,7 @@ inference stays 100% local.)*
 Prereqs: Python 3.11 and [Ollama](https://ollama.com) installed and running.
 
 ```bash
-git clone <repo> && cd keptra
+git clone <repo> && cd localwitness
 python3.11 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python -m spacy download en_core_web_lg   # local NER model for PII redaction
@@ -199,11 +199,11 @@ files to try immediately.
 
 ## Credits & licenses
 
-Keptra's own code is **MIT-licensed** (`LICENSE` at the repo root). Every
+LocalWitness's own code is **MIT-licensed** (`LICENSE` at the repo root). Every
 model and library it uses, with licenses:
 
 - **Object detection uses [Ultralytics YOLOv8n](https://github.com/ultralytics/ultralytics), licensed AGPL-3.0.**
-  (Keptra's own code remains MIT — we use the AGPL library, we don't relicense it.)
+  (LocalWitness's own code remains MIT — we use the AGPL library, we don't relicense it.)
 - [faster-whisper](https://github.com/SYSTRAN/faster-whisper) (MIT) — speech-to-text, Whisper `base` weights by OpenAI (MIT)
 - [sentence-transformers](https://www.sbert.net/) / [all-MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) (Apache-2.0) — embeddings
 - [ChromaDB](https://github.com/chroma-core/chroma) (Apache-2.0) — local vector store

@@ -6,7 +6,7 @@ from pathlib import Path
 import cv2
 from ultralytics import YOLO, settings
 
-from keptra import metrics
+from localwitness import metrics
 
 # Privacy: Ultralytics ships with usage analytics ("sync") on — never allowed here.
 settings.update({"sync": False})

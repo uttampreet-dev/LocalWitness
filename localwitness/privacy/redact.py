@@ -2,7 +2,7 @@
 
 import time
 
-from keptra import metrics
+from localwitness import metrics
 
 # Entity types we redact, and the typed tag each becomes.
 PII_ENTITIES = [

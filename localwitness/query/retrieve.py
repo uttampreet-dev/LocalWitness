@@ -1,6 +1,6 @@
 """Retrieval: top-k chunk lookup + citation labels for a question."""
 
-from keptra.index.store import query
+from localwitness.index.store import query
 
 TOP_K = 5
 

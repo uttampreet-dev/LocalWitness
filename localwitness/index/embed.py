@@ -6,7 +6,7 @@ from pathlib import Path
 import torch
 from sentence_transformers import SentenceTransformer
 
-from keptra import metrics
+from localwitness import metrics
 
 EMBED_MODEL = "all-MiniLM-L6-v2"
 MODELS_DIR = Path(__file__).resolve().parents[2] / "models"

@@ -1,4 +1,4 @@
-# Keptra theme — "private terminal meets precision instrument".
+# LocalWitness theme — "private terminal meets precision instrument".
 # Fonts are vendored in ./static/fonts and served by Streamlit's static
 # file server, so the UI itself stays fully offline.
 

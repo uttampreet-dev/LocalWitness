@@ -4,7 +4,7 @@ import time
 
 import ollama
 
-from keptra import metrics
+from localwitness import metrics
 
 VISION_MODEL = "moondream"
 
