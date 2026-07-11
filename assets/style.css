@@ -397,6 +397,23 @@ div[data-testid="stExpander"] summary p {
   border-color: var(--accent-dim) !important;
 }
 
+/* Recent questions: bare clickable mono lines — no chip/card styling */
+[class*="st-key-recent_"] button,
+[class*="st-key-recent_"] button:hover {
+  background: transparent !important;
+  border: none !important;
+  padding: 0.05rem 0 !important;
+  min-height: 0 !important;
+  justify-content: flex-start !important;
+}
+[class*="st-key-recent_"] button p {
+  font-family: var(--mono) !important;
+  font-size: 12.5px !important;
+  color: var(--text-dim);
+  transition: color 120ms ease;
+}
+[class*="st-key-recent_"] button:hover p { color: var(--accent); }
+
 /* ---- Answer block ---- */
 .kp-answer {
   font-size: 15px;

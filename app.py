@@ -265,6 +265,11 @@ elif page == "Ask":
     ui.heading(
         "Ask", "Answers come only from your indexed notes — every claim cited."
     )
+    # Single-shot flow: once an answer lands, the input clears (flag consumed
+    # here, before the widget instantiates) so the next question needs no
+    # manual delete. The last answer + evidence stay rendered below.
+    if st.session_state.pop("ask_q_clear", False):
+        st.session_state["ask_q"] = ""
     question = st.text_input(
         "Your question",
         key="ask_q",
@@ -305,7 +310,20 @@ elif page == "Ask":
     def _show_evidence(hits: list[dict]) -> None:
         st.markdown(ui.evidence_block(hits), unsafe_allow_html=True)
 
-    if ask_clicked and question.strip():
+    def _remember_question(text: str) -> None:
+        recents = st.session_state.setdefault("recent_questions", [])
+        if text in recents:
+            recents.remove(text)
+        recents.insert(0, text)
+        del recents[5:]
+
+    def _rerun_recent(text: str) -> None:
+        st.session_state["ask_q"] = text
+        st.session_state["ask_auto"] = True
+
+    ask_auto = st.session_state.pop("ask_auto", False)
+
+    if (ask_clicked or ask_auto) and question.strip():
         with st.spinner("Searching your notes…"):
             hits = retrieve(question)
         if not hits:
@@ -317,18 +335,15 @@ elif page == "Ask":
 
             with st.spinner("Answering + redacting locally…"):
                 full_answer = redact("".join(answer_stream(question, hits)))
-            st.markdown(
-                ui.styled_answer(full_answer, question), unsafe_allow_html=True
-            )
             st.session_state["ask_result"] = {
                 "question": question,
                 "answer": full_answer,
                 "hits": hits,
                 "redacted": True,
             }
-            ui.caption(
-                "evidence hidden while redaction is on — raw excerpts may contain PII"
-            )
+            _remember_question(question)
+            st.session_state["ask_q_clear"] = True
+            st.rerun()
         else:
             slot = st.empty()
             answer = ""
@@ -338,15 +353,16 @@ elif page == "Ask":
                     ui.styled_answer(answer, question, streaming=True),
                     unsafe_allow_html=True,
                 )
-            slot.markdown(ui.styled_answer(answer, question), unsafe_allow_html=True)
             st.session_state["ask_result"] = {
                 "question": question,
                 "answer": answer,
                 "hits": hits,
                 "redacted": False,
             }
-            _show_evidence(hits)
-    elif "ask_result" in st.session_state:
+            _remember_question(question)
+            st.session_state["ask_q_clear"] = True
+            st.rerun()
+    if "ask_result" in st.session_state:
         result = st.session_state["ask_result"]
         st.markdown(
             ui.styled_answer(result["answer"], result["question"]),
@@ -358,6 +374,18 @@ elif page == "Ask":
             )
         else:
             _show_evidence(result["hits"])
+
+    # Lightweight shortcuts, not a transcript: question strings only.
+    recents = st.session_state.get("recent_questions", [])
+    if recents:
+        st.markdown(ui.label("Recent"), unsafe_allow_html=True)
+        for index, recent_question in enumerate(recents):
+            st.button(
+                recent_question,
+                key=f"recent_{index}",
+                on_click=_rerun_recent,
+                args=(recent_question,),
+            )
 
 elif page == "Metrics":
     ui.heading(
