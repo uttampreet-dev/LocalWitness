@@ -7,7 +7,7 @@
 # conflict, loosen the pin (e.g. change == to >=) rather than fighting it.
 
 # ---- Phase 1: CORE (required) ----
-streamlit==1.41.1              # local web UI
+streamlit==1.58.0              # local web UI (>=1.46 needed for the theme config keys)
 faster-whisper==1.1.1          # speech-to-text (CTranslate2, fast on Apple Silicon)
 sentence-transformers==3.3.1   # embeddings (all-MiniLM-L6-v2)
 chromadb==0.5.23               # local persistent vector store
