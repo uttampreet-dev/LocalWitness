@@ -8,3 +8,7 @@ exports/
 datasets/
 runs/
 sources/
+
+# Build-process docs — kept locally, not part of the runnable project
+CLAUDE.md
+LocalWitness-PRD.md

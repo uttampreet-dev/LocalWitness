@@ -7,6 +7,33 @@ cloud, no account, no network required.
 
 *Built solo for OSDHack 2026 (theme: On-Device AI).*
 
+## Why LocalWitness?
+
+**Everything runs on your device.** Speech recognition, vision, embeddings,
+retrieval, reasoning, and PII redaction — all local. **No cloud APIs. No
+account. No network.**
+
+**Every answer is backed by evidence** — a citation on every claim, or an
+honest "That's not in my notes." Unlike cloud note assistants, your documents
+never leave the machine.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph LOCAL["all on-device · no network · no cloud API"]
+        direction LR
+        IN["Voice / PDF / Image"] --> EXTRACT["Whisper · pypdf · Moondream"]
+        EXTRACT --> CHUNK["Chunk"]
+        CHUNK --> EMBED["Embed · MiniLM"]
+        EMBED --> STORE[("ChromaDB<br/>local vector store")]
+        STORE --> RAG["Qwen2.5 · local RAG"]
+        RAG --> ANSWER["Answer + cited Evidence"]
+    end
+    style LOCAL stroke:#4DD4C4,stroke-width:2px
+    style ANSWER stroke:#4DD4C4,stroke-width:2px
+```
+
 ## Problem
 
 People accumulate voice notes, contracts, meeting notes, and photos that hold
@@ -20,11 +47,11 @@ laptop.
 
 ## Solution
 
-LocalWitness runs the entire pipeline on your machine: speech-to-text, image
-captioning, semantic indexing, and a local LLM that answers questions **only
-from your own material, with a citation on every claim** — `[source @
+LocalWitness **runs the entire pipeline on your machine**: speech-to-text,
+image captioning, semantic indexing, and a local LLM that answers questions
+**only from your own material, with a citation on every claim** — `[source @
 timestamp]` or `[document, page N]` — and says "That's not in my notes"
-rather than guessing. Disconnect the network and everything still works.
+rather than guessing. **Disconnect the network and everything still works.**
 Nothing ever leaves the device.
 
 ## On-Device AI usage
@@ -40,9 +67,9 @@ Nothing ever leaves the device.
 | Cloud / optional support | **none required** | — |
 
 **The browser is only the interface.** Streamlit serves the UI on
-`localhost`; every model runs natively on the device via Ollama
-(llama.cpp/Metal), CTranslate2, and PyTorch. No cloud AI API is called for
-any feature — there is no API key anywhere in the codebase. Even the UI
+`localhost`; **every model runs natively on the device** via Ollama
+(llama.cpp/Metal), CTranslate2, and PyTorch. **No cloud AI API is called for
+any feature — there is no API key anywhere in the codebase.** Even the UI
 fonts are bundled in the repo, so the interface itself loads offline.
 
 ### Privacy receipts
@@ -163,12 +190,7 @@ files to try immediately.
 
 **Demo video:** `[demo video link]`
 
-| Screen | |
-|---|---|
-| Upload — live local pipeline | `[screenshot: upload pipeline]` |
-| Ask — cited answer + evidence | `[screenshot: ask answer + evidence]` |
-| Library — semantic search | `[screenshot: library]` |
-| Metrics — on-device stack | `[screenshot: metrics]` |
+Screenshots available in the Unstop submission.
 
 ## Known limitations
 
