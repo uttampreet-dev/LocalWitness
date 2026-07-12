@@ -14,14 +14,6 @@ primaryColor = "#4DD4C4"
 backgroundColor = "#0E1116"
 secondaryBackgroundColor = "#161B22"
 textColor = "#E6EBF2"
-linkColor = "#4DD4C4"
-borderColor = "#262D3A"
-baseRadius = "4px"
-buttonRadius = "4px"
 # Fonts are applied via @font-face + rules in assets/style.css (theme.font
 # only accepts fonts registered through [[theme.fontFaces]]).
-codeBackgroundColor = "#161B22"
 
-[theme.sidebar]
-backgroundColor = "#0E1116"
-secondaryBackgroundColor = "#161B22"
