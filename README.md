@@ -127,6 +127,14 @@ streamlit run app.py
   sharing; a larger detection model would raise the floor at the cost of
   speed.
 
+Deferred deliberately (to protect the working core within the event
+window), planned as future scope:
+
+- **Evidence relationship graph** — visualize which sources support which
+  answers and how sources corroborate each other.
+- **Timeline view** — lay indexed notes and cited moments out on a time
+  axis (voice-note timestamps, document dates).
+
 ## Credits
 
 Every model and library Keptra uses, with licenses:

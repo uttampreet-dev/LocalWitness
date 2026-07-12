@@ -16,7 +16,7 @@ from keptra.query.retrieve import cite
 LLM_MODEL = "qwen2.5:3b"
 
 OLLAMA_HELP = (
-    "⚠️ Couldn't reach the local Ollama server. Make sure it is running "
+    "Couldn't reach the local Ollama server. Make sure it is running "
     "(`ollama serve` or the Ollama menu-bar app) and the model is pulled "
     f"(`ollama pull {LLM_MODEL}`), then try again."
 )
@@ -25,7 +25,10 @@ SYSTEM_PROMPT = (
     "You are Keptra, a private, offline second brain. Answer ONLY using the "
     "provided context. Every claim must carry a citation in [brackets], "
     "copying the source label exactly as given, e.g. [interview_note.m4a @ "
-    "00:00] or [vendor_contract.pdf, page 2] — no sentence without one. If "
+    "00:00] or [vendor_contract.pdf, page 2] — no sentence without one. When "
+    "a sentence combines facts from more than one source, chain a citation "
+    "for each, e.g. [interview_note.m4a @ 00:00][vendor_contract.pdf, page "
+    "2]. If "
     "the answer isn't in the context, reply with exactly \"That's not in my "
     "notes.\" and nothing else — no citation. Never use outside knowledge."
 )
@@ -58,7 +61,9 @@ def build_prompt(question: str, hits: list[dict]) -> str:
     return (
         f"Context:\n{context}\n\nQuestion: {question}\n\n"
         "Answer using only the context above. End every sentence with the "
-        f"citation of the chunk it came from, like [{example}]. Valid "
+        f"citation of the chunk it came from, like [{example}]; if a "
+        "sentence draws on several chunks, chain one citation per chunk, "
+        f"like [{example}][another label]. Valid "
         "citations are ONLY the bracketed labels that precede each context "
         "chunk above — copy them exactly, never invent one, and never cite a "
         "file name that merely appears inside the text."

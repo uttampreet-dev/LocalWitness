@@ -5,15 +5,25 @@ from keptra.index.store import query
 TOP_K = 5
 
 
+def clean_value(value: object) -> str:
+    """Metadata value as a display string; '' for missing/None-ish values."""
+    if value is None:
+        return ""
+    text = str(value).strip()
+    return "" if text.lower() in ("none", "null") else text
+
+
 def cite(meta: dict | None) -> str:
     """Human-readable citation for a chunk: source plus timestamp/page."""
     if not meta:
         return "unknown source"
-    name = meta.get("source_name", "unknown source")
-    if meta.get("timestamp"):
-        return f"{name} @ {meta['timestamp']}"
-    if meta.get("page"):
-        return f"{name}, page {meta['page']}"
+    name = clean_value(meta.get("source_name")) or "unknown source"
+    timestamp = clean_value(meta.get("timestamp"))
+    if timestamp:
+        return f"{name} @ {timestamp}"
+    page = clean_value(meta.get("page"))
+    if page:
+        return f"{name}, page {page}"
     return name
 
 
