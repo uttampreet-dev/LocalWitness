@@ -47,11 +47,11 @@ MODEL_SPECS = [
         "perf_label": "s per min of audio",
     },
     {
-        "name": "all-MiniLM-L6-v2",
+        "name": "all-MiniLM-L6-v2 (INT8 ONNX)",
         "task": "text embeddings (384-dim)",
         "source": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2",
         "license": "Apache-2.0",
-        "size": "~90 MB",
+        "size": "~23 MB INT8 (~90 MB fp32 fallback)",
         "perf_key": "embed_ms_per_text",
         "perf_label": "ms per text embedded",
     },

@@ -1,9 +1,10 @@
 # LocalWitness
 
-**Your memory, on-device.** A private, fully offline multimodal second brain:
-drop in voice notes, documents, and photos — LocalWitness transcribes, describes,
-and indexes them locally, then answers questions with cited evidence. No
-cloud, no account, no network required.
+**An air-gapped evidence engine for your own material.** Drop in voice notes,
+documents, and photos; LocalWitness transcribes, describes, and indexes them
+**entirely on your device**, then answers questions where **every claim carries
+a citation you can click and open at the exact cited spot** — the PDF page, the
+second in the audio, the line in the file. No cloud, no account, no network.
 
 *Built solo for OSDHack 2026 (theme: On-Device AI).*
 
@@ -13,9 +14,15 @@ cloud, no account, no network required.
 retrieval, reasoning, and PII redaction — all local. **No cloud APIs. No
 account. No network.**
 
-**Every answer is backed by evidence** — a citation on every claim, or an
-honest "That's not in my notes." Unlike cloud note assistants, your documents
-never leave the machine.
+**Answers you can audit, not just trust.** Every claim carries a citation — or
+an honest "That's not in my notes" when the answer isn't there. And a citation
+isn't decoration: **click it and the source opens at the cited moment**, the
+contract page with the passage outlined, the voice note cued to 00:35. Most
+"chat with your docs" tools ask you to trust a paraphrase. This one hands you
+the receipt.
+
+**Your documents never leave the machine** — the one place a second brain full
+of contracts, medical notes, and interviews actually belongs.
 
 ## Architecture
 
@@ -104,7 +111,7 @@ whatever machine the app runs on.
 | Stage | Model | License | Approx size | Measured |
 |---|---|---|---|---|
 | Speech-to-text | [faster-whisper `base`](https://github.com/SYSTRAN/faster-whisper) (int8) | MIT | ~145 MB | ~5–7 s per minute of audio |
-| Embeddings | [all-MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) (384-dim) | Apache-2.0 | ~90 MB | ~90 ms per chunk |
+| Embeddings | [all-MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) (384-dim), **INT8 ONNX** | Apache-2.0 | **~23 MB** (INT8; 90 MB fp32) | **~3 ms per chunk** (fp32: ~90 ms) |
 | Vector search | [ChromaDB](https://github.com/chroma-core/chroma) (persistent, HNSW) | Apache-2.0 | n/a (library) | ~330 ms per query (incl. query embedding) |
 | Answering | [qwen2.5:3b](https://ollama.com/library/qwen2.5) (INT4 GGUF) via Ollama | Apache-2.0 | ~1.9 GB | ~46 tokens/sec, 1–3.5 s per answer |
 | Image captioning | [Moondream2](https://ollama.com/library/moondream) via Ollama | Apache-2.0 | ~1.7 GB | ~4 s per image (two VLM passes) |
@@ -126,6 +133,15 @@ the same machine as everything else:
 (qwen2.5:3b) is likewise already INT4-quantized GGUF via Ollama (~6 GB fp16 →
 ~1.9 GB on disk).
 
+**This is not a benchmark we ran and shelved — the app actually uses it.**
+[localwitness/index/embed.py](localwitness/index/embed.py) loads the INT8
+ONNX model as its default embedding backend and falls back to PyTorch only if
+the quantized artifact hasn't been built. **Honest caveat:** INT8 is lossy —
+quantized vectors sit at ~0.97 cosine to their fp32 counterparts. Because the
+app embeds *both* the index and the queries with the same backend, retrieval
+is unaffected (the same sources come back at the same ranks); but if you ever
+mix backends against one index, rebuild the index.
+
 ### Customization: fine-tuning YOLOv8n
 
 The privacy-blur detector can be fine-tuned to protect *your* sensitive class
@@ -137,17 +153,23 @@ python scripts/finetune_yolo.py --make-sample-data 60
 python scripts/finetune_yolo.py --epochs 10 --imgsz 320
 ```
 
-Pretrained YOLOv8n knows 80 COCO classes and cannot detect a novel class at
-all, so fine-tuning takes its mAP from **0.000** to a working detector:
+**What this demonstrates is the loop, not a state-of-the-art detector.**
+Pretrained YOLOv8n knows 80 COCO classes and scores a flat 0.000 on a class
+it has never seen, so the point of the run below is that the full
+train → export → local-inference path works end-to-end on-device:
 
 | | mAP50 | mAP50-95 |
 |---|---|---|
 | Before (pretrained, class unknown) | 0.000 | 0.000 |
-| After (fine-tuned, tiny sample run) | 0.995 | 0.949 |
+| After (fine-tuned, 60-image synthetic sample) | 0.995 | 0.949 |
 
-*(Measured: 10 epochs, imgsz 320, Apple Silicon MPS — a ~2-minute run on the
-60-image synthetic sample; exported weights are 6.2 MB. Train anywhere —
-inference stays 100% local.)*
+*(Measured: 10 epochs, imgsz 320, Apple Silicon MPS, ~2-minute run; exported
+weights are 6.2 MB.)* **Read that 0.995 with suspicion — we do.** It is a
+tiny, synthetic, easily-separable dataset, so a near-perfect score is what
+you'd expect and says little about real-world accuracy. The result worth
+taking seriously is that the fine-tuned weights export and run locally; on a
+real 200–400-image dataset you would train the same way (Colab is fine) and
+copy the weights back — **inference stays 100% local either way.**
 
 ## Setup
 
@@ -157,11 +179,16 @@ Prereqs: Python 3.11 and [Ollama](https://ollama.com) installed and running.
 git clone <repo> && cd localwitness
 python3.11 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-python -m spacy download en_core_web_lg   # local NER model for PII redaction
-ollama pull qwen2.5:3b                    # local LLM for cited answers
-ollama pull moondream                     # local VLM for image captioning
+python -m spacy download en_core_web_lg    # local NER model for PII redaction
+ollama pull qwen2.5:3b                     # local LLM for cited answers
+ollama pull moondream                      # local VLM for image captioning
+python scripts/quantize_embeddings.py      # build the INT8 embedding model the app runs
 streamlit run app.py
 ```
+
+(The app runs fine without that last step — it falls back to the fp32 PyTorch
+embeddings — but then you're not getting the 4× smaller / 3.5× faster
+embedder it's designed around.)
 
 Evidence rows can open the cited source in context (text window, rendered
 PDF page, audio seeked to the timestamp) — PyMuPDF handles the PDF page
