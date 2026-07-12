@@ -4,6 +4,7 @@ Streamlit entry point. Run with: streamlit run app.py
 """
 
 import re
+import shutil
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -30,6 +31,61 @@ from keptra.query.retrieve import retrieve
 
 AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a"}
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
+
+# Local vault of original uploads so evidence rows can open the real source
+# (kept on-device, gitignored). Sources indexed before this existed fall back
+# to sample_data/, then degrade to the stored snippet.
+SOURCES_DIR = Path(__file__).resolve().parent / "sources"
+
+
+def resolve_source_file(source_name: str) -> Path | None:
+    for base in (SOURCES_DIR, Path(__file__).resolve().parent / "sample_data"):
+        candidate = base / source_name
+        if candidate.exists():
+            return candidate
+    return None
+
+
+@st.cache_data(show_spinner=False, max_entries=32)
+def pdf_page_png(path_str: str, page_number: int, needle: str, mtime: float) -> bytes:
+    """Render the cited PDF page as PNG, outlining the cited passage in
+    accent where PyMuPDF's text search finds it (best effort — no fake
+    highlight if the search misses). Cached per (file, page, needle, mtime)."""
+    import fitz
+
+    with fitz.open(path_str) as doc:
+        page = doc[page_number - 1]
+        if needle:
+            for rect in page.search_for(needle):
+                page.draw_rect(rect, color=(0.302, 0.831, 0.769), width=1.2)
+        return page.get_pixmap(dpi=120).tobytes("png")
+
+
+def text_context_window(path: Path, chunk_text: str, window: int = 650):
+    """(pre, match, post) around the cited chunk in the source text, using
+    the same whitespace normalization the indexer used so the chunk is an
+    exact substring. Returns None if the passage can't be located."""
+    from keptra.ingest.documents import _normalize
+
+    text = _normalize(path.read_text(encoding="utf-8", errors="replace"))
+    needle = chunk_text.strip()
+    index = text.find(needle)
+    if index == -1:  # fall back to the chunk's head if edges were trimmed
+        needle = needle[:120]
+        index = text.find(needle)
+    if index == -1:
+        return None
+    start = max(0, index - window)
+    end = min(len(text), index + len(needle) + window)
+    if start > 0:
+        start = text.find(" ", start, index)
+        start = 0 if start == -1 else start + 1
+    if end < len(text):
+        cut = text.rfind(" ", index + len(needle), end)
+        end = end if cut == -1 else cut
+    pre = ("… " if start > 0 else "") + text[start:index]
+    post = text[index + len(needle) : end] + (" …" if end < len(text) else "")
+    return pre, needle, post
 
 st.set_page_config(page_title="Keptra", page_icon="🧠", layout="wide")
 ui.inject_css()
@@ -184,6 +240,10 @@ if page == "Upload":
                 replaced = delete_source(uploaded.name)
                 add_chunks(chunks)
                 indexed_keys.add(cache_key)
+            # Keep the original in the local vault so evidence rows can open
+            # the real source later. On-device only; gitignored.
+            SOURCES_DIR.mkdir(exist_ok=True)
+            shutil.copy2(tmp_path, SOURCES_DIR / uploaded.name)
             summary = [f"indexed {len(chunks)} chunk(s)"]
             if replaced:
                 summary.append(f"replaced {replaced} old")
@@ -307,8 +367,57 @@ elif page == "Ask":
     with ask_col:
         ask_clicked = st.button("Ask", type="primary", use_container_width=True)
 
+    def _render_context(group: dict) -> None:
+        """The 'view in context' body for one evidence source. Lazy: only
+        runs while the row's toggle is on; presentation only."""
+        path = resolve_source_file(group["name"])
+        if path is None:
+            ui.caption(
+                "source file not in the local vault — re-upload it once to "
+                "enable the context view"
+            )
+            return
+        suffix = path.suffix.lower()
+        if suffix in {".md", ".txt"}:
+            window = text_context_window(path, group["text"])
+            if window is None:
+                ui.caption("couldn't locate the cited passage in the file")
+            else:
+                st.markdown(ui.context_html(*window), unsafe_allow_html=True)
+        elif suffix == ".pdf":
+            page_number = int(group["page"]) if group["page"].isdigit() else 1
+            needle = " ".join(group["text"].split())[:60]
+            png = pdf_page_png(
+                str(path), page_number, needle, path.stat().st_mtime
+            )
+            st.image(png, width=680)
+            ui.caption(f"{group['name']} — page {page_number}, cited passage outlined")
+        elif suffix in AUDIO_EXTENSIONS:
+            timestamp = group["timestamp"] or "00:00"
+            try:
+                minutes, seconds = timestamp.split(":")
+                start_at = int(minutes) * 60 + int(seconds)
+            except ValueError:
+                start_at = 0
+            st.audio(str(path), start_time=start_at)
+            ui.caption(f"cued to the cited moment — @ {timestamp}")
+        elif suffix in IMAGE_EXTENSIONS:
+            st.image(str(path), width=420)
+            ui.caption(f"{group['name']} — what Moondream read from it is quoted above")
+        else:
+            ui.caption(f"no context view for {suffix} sources")
+
     def _show_evidence(hits: list[dict]) -> None:
-        st.markdown(ui.evidence_block(hits), unsafe_allow_html=True)
+        groups = ui.group_evidence(hits)
+        plural = "source" if len(groups) == 1 else "sources"
+        st.markdown(
+            ui.label(f"Evidence · {len(groups)} {plural}"), unsafe_allow_html=True
+        )
+        for group in groups:
+            with st.container(key=f"evgrp_{group['name']}"):
+                st.markdown(ui.exhibit_row_html(group), unsafe_allow_html=True)
+                if st.toggle("view in context", key=f"evctx_{group['name']}"):
+                    _render_context(group)
 
     def _remember_question(text: str) -> None:
         recents = st.session_state.setdefault("recent_questions", [])

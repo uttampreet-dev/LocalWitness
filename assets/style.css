@@ -382,6 +382,40 @@ div[data-testid="stExpander"] summary p {
   padding-left: 0.85rem;
 }
 
+/* Per-source exhibit groups (row + view-in-context + context share one
+   accent-dim left edge; hairline top on the row, tight internal rhythm) */
+[class*="st-key-evgrp_"] {
+  border-left: 2px solid var(--accent-dim);
+  padding-left: 0.85rem;
+}
+[class*="st-key-evgrp_"] [data-testid="stVerticalBlock"] { gap: 0.15rem; }
+.kp-exhibit { border-bottom: none !important; }
+.kp-exhibit:hover { background: transparent; }
+/* the view-in-context toggle: small mono affordance, not a form control */
+[class*="st-key-evctx_"] label p {
+  font-family: var(--mono) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.06em;
+  color: var(--text-dim) !important;
+}
+[class*="st-key-evctx_"]:hover label p { color: var(--accent) !important; }
+
+/* Source context window: dim body, cited passage marked in accent */
+.kp-context {
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+  padding: 0.35rem 0 0.55rem 0;
+}
+.kp-context .kp-hl,
+.kp-context mark.kp-hl {
+  background: rgba(77, 212, 196, 0.16);
+  color: var(--text);
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
 /* Suggested-question chips: flat mono, border ticks to accent on hover */
 [class*="st-key-chip_"] button {
   color: var(--text-dim) !important;

@@ -198,10 +198,14 @@ def _snippet(text: str) -> str:
     return text
 
 
-def evidence_block(hits: list[dict]) -> str:
-    """EVIDENCE label + retrieved chunks grouped per real source, styled as
-    pulled exhibits. Each source appears once, with the locations of every
-    chunk it contributed and its best (measured) retrieval similarity."""
+def group_evidence(hits: list[dict]) -> list[dict]:
+    """Retrieved chunks grouped per real source, best-ranked first.
+
+    Each group carries what the exhibit row and the context view need:
+    name, type, meta string (locations · chunks · measured sim), truncated
+    snippet, plus the best hit's FULL text and its timestamp/page so the
+    context view can locate the exact cited spot.
+    """
     groups: dict[str, dict] = {}
     for hit in hits:
         meta = hit.get("metadata") or {}
@@ -209,9 +213,13 @@ def evidence_block(hits: list[dict]) -> str:
         group = groups.setdefault(
             name,
             {
+                "name": name,
                 "type": clean_value(meta.get("source_type")),
                 "locations": [],
                 "snippet": _snippet(hit["text"]),
+                "text": hit["text"],
+                "timestamp": clean_value(meta.get("timestamp")),
+                "page": clean_value(meta.get("page")),
                 "chunks": 0,
                 "sim": None,
             },
@@ -225,17 +233,35 @@ def evidence_block(hits: list[dict]) -> str:
         location = f"@ {timestamp}" if timestamp else (f"p.{page}" if page else "")
         if location and location not in group["locations"]:
             group["locations"].append(location)
-    rows = []
-    for name, group in groups.items():
-        meta_bits = [bit for bit in (group["type"], ", ".join(group["locations"])) if bit]
+    for group in groups.values():
+        meta_bits = [
+            bit for bit in (group["type"], ", ".join(group["locations"])) if bit
+        ]
         meta_bits.append(f"{group['chunks']} chunk{'s' if group['chunks'] != 1 else ''}")
         if group["sim"] is not None:
             meta_bits.append(f"sim {group['sim']:.2f}")
-        rows.append((group["type"], name, " · ".join(meta_bits), group["snippet"]))
-    plural = "source" if len(groups) == 1 else "sources"
+        group["meta"] = " · ".join(meta_bits)
+    return list(groups.values())
+
+
+def exhibit_row_html(group: dict) -> str:
+    """A single evidence row (no list wrapper) — hairline top edge only; the
+    accent-dim left border comes from the group's container."""
     return (
-        label(f"Evidence · {len(groups)} {plural}")
-        + f'<div class="kp-evidence">{rows_html(rows)}</div>'
+        '<div class="kp-row kp-exhibit"><div class="kp-row-head">'
+        f'<span class="kp-row-name">{icon(group["type"])}{html.escape(group["name"])}</span>'
+        f'<span class="kp-row-meta">{html.escape(group["meta"])}</span></div>'
+        f'<div class="kp-row-snippet">{html.escape(group["snippet"])}</div></div>'
+    )
+
+
+def context_html(pre: str, match: str, post: str) -> str:
+    """Source context window with the cited passage highlighted in accent."""
+    return (
+        '<div class="kp-context">'
+        f"{html.escape(pre)}"
+        f'<mark class="kp-hl">{html.escape(match)}</mark>'
+        f"{html.escape(post)}</div>"
     )
 
 

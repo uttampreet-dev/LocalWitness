@@ -136,6 +136,10 @@ ollama pull moondream                     # local VLM for image captioning
 streamlit run app.py
 ```
 
+Evidence rows can open the cited source in context (text window, rendered
+PDF page, audio seeked to the timestamp) — PyMuPDF handles the PDF page
+render and installs with the requirements above.
+
 First run downloads the Whisper and MiniLM weights into `models/` (one-time,
 ~250 MB); everything is offline from then on. `sample_data/` contains demo
 files to try immediately.

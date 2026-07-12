@@ -13,6 +13,7 @@ sentence-transformers==3.3.1   # embeddings (all-MiniLM-L6-v2)
 chromadb==0.5.23               # local persistent vector store
 ollama==0.4.5                  # python client for the local Ollama LLM server
 pypdf==5.1.0                   # PDF text extraction
+pymupdf==1.28.0                # render cited PDF pages in the evidence view
 python-docx==1.1.2             # .docx text extraction
 numpy==1.26.4                  # pinned <2 for broad compatibility with the above
 
