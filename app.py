@@ -87,7 +87,11 @@ def text_context_window(path: Path, chunk_text: str, window: int = 650):
     post = text[index + len(needle) : end] + (" …" if end < len(text) else "")
     return pre, needle, post
 
-st.set_page_config(page_title="LocalWitness", page_icon="🧠", layout="wide")
+st.set_page_config(
+    page_title="LocalWitness",
+    page_icon=str(Path(__file__).resolve().parent / "assets" / "favicon.svg"),
+    layout="wide",
+)
 ui.inject_css()
 
 page = ui.rail()

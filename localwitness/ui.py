@@ -23,22 +23,32 @@ def inject_css() -> None:
     st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
 
 
+# The LocalWitness mark: a citation glyph — [ · ], the cited moment.
+# It is the product's spine made geometry, echoing the mono [source @ time]
+# citations throughout the UI. 24x24, straight lines, currentColor.
+MARK_PATHS = (
+    "<path d='M9 4.5H5.5v15H9'/><path d='M15 4.5h3.5v15H15'/>"
+    "<circle cx='12' cy='12' r='2.2' fill='currentColor' stroke='none'/>"
+)
+
+
+def mark_svg() -> str:
+    return (
+        '<span class="kp-mark"><svg viewBox="0 0 24 24" fill="none" '
+        'stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+        f'stroke-linejoin="round" aria-hidden="true">{MARK_PATHS}</svg></span>'
+    )
+
+
 def rail() -> str:
     """Left rail: wordmark, nav, and the pinned offline status. Returns the
     selected page name."""
     with st.sidebar:
-        # Logo mark: an angular L — stem + foot, echoing "Local" — thin
-        # stroke, currentColor so it takes the accent from CSS. Inline SVG.
-        mark = (
-            '<span class="kp-mark"><svg viewBox="0 0 24 24" fill="none" '
-            'stroke="currentColor" stroke-width="2.2" stroke-linecap="round" '
-            'stroke-linejoin="round" aria-hidden="true">'
-            "<path d='M6 3v18h13'/></svg></span>"
-        )
+        mark = mark_svg()
         st.markdown(
             f'<p class="kp-wordmark">{mark}LOCALWITNESS</p>'
-            '<p class="kp-tagline">Your memory, on-device.</p>'
-            '<p class="kp-tagsub">PRIVATE · SEARCHABLE · OFFLINE</p>',
+            '<p class="kp-tagline">Private AI that cites its sources.</p>'
+            '<p class="kp-tagsub">PRIVATE<br>SEARCHABLE<br>OFFLINE</p>',
             unsafe_allow_html=True,
         )
         page = st.radio(
