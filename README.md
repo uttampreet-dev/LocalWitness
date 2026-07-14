@@ -79,21 +79,69 @@ Nothing ever leaves the device.
 any feature — there is no API key anywhere in the codebase.** Even the UI
 fonts are bundled in the repo, so the interface itself loads offline.
 
-### Privacy receipts
+### Privacy receipts — and a script that proves them
 
-We didn't just claim privacy — we audited the dependency chain for network
-calls and closed every leak we found:
+LocalWitness asks you never to trust an answer without a receipt. It should be
+held to the same standard. So the offline claim isn't an assertion — it's a
+test you can run:
 
-1. **ChromaDB** ships with anonymized telemetry enabled — disabled explicitly
-   in our client settings ([localwitness/index/store.py](localwitness/index/store.py)).
+```bash
+python scripts/verify_offline.py
+```
+
+[scripts/verify_offline.py](scripts/verify_offline.py) blocks **every
+non-loopback socket connection at the Python level** (`connect`,
+`create_connection`, and DNS resolution), then runs the **full real pipeline —
+all six models**, ingest through cited answer, using the actual application
+code. If anything reaches for the internet, the attempt is recorded and the
+run fails.
+
+```
+  [1/9] Speech-to-text (faster-whisper)     ok    4.2s  10 segments
+  [2/9] Document extraction (pypdf)         ok    0.0s  2 page(s)
+  [3/9] Image captioning (Moondream/Ollama) ok    4.5s  742 chars
+  [4/9] Embeddings (MiniLM, INT8 ONNX)      ok    0.2s  dim 384
+  [5/9] Indexing (ChromaDB, local)          ok    0.1s  3 chunk(s)
+  [6/9] Retrieval (semantic search)         ok    0.0s  5 hit(s)
+  [7/9] RAG answer (qwen2.5:3b / Ollama)    ok    5.8s  278 chars
+  [8/9] PII redaction (Presidio + spaCy)    ok    3.0s  Call [PERSON] at [EMAIL_ADDRESS]
+  [9/9] Privacy blur (YOLOv8n)              ok    0.8s  0 region(s)
+
+  RECEIPT
+    loopback connections (allowed, on-device):  3  → 127.0.0.1 (Ollama)
+    outbound connection attempts (non-loopback): 0
+
+    VERDICT: PASS — all six models ran, start to finish,
+    with zero non-loopback connections. Nothing left this device.
+```
+
+**Loopback is allowed and counted openly.** Ollama serves the local LLM and
+VLM on `127.0.0.1:11434` — that is a socket, but the packets never leave the
+machine. We count them rather than pretend they don't exist; the honest claim
+is *zero non-loopback connections*, and that is exactly what the script
+asserts.
+
+**The script earned its keep: it caught two leaks we had missed.** Every fix
+below is in the code, and the test now holds us to it:
+
+1. **ChromaDB** ships with anonymized telemetry enabled — disabled in our
+   client settings ([index/store.py](localwitness/index/store.py)).
 2. **HuggingFace hub** revalidates cached models over the network on every
-   load — loads are forced offline-first once weights are downloaded
-   ([localwitness/index/embed.py](localwitness/index/embed.py)).
-3. **Ultralytics** ships with usage analytics ("sync") enabled — disabled at
-   import time ([localwitness/privacy/blur.py](localwitness/privacy/blur.py)).
+   load — embeddings are forced offline-first
+   ([index/embed.py](localwitness/index/embed.py)).
+3. **Ultralytics** ships with usage analytics ("sync") on — disabled
+   ([privacy/blur.py](localwitness/privacy/blur.py)).
+4. **faster-whisper resolved `huggingface.co` on every model load** — even
+   with the weights already cached. Now loaded `local_files_only` first, so
+   the network is touched only for the documented one-time first-run download
+   ([ingest/audio.py](localwitness/ingest/audio.py)).
+5. **Ultralytics probes Cloudflare and Google DNS (`1.1.1.1`, `8.8.8.8`) at
+   import time** to set an `ONLINE` flag — silently, before you call a single
+   function. Killed with `YOLO_OFFLINE`, which must be set *before* the import
+   ([privacy/blur.py](localwitness/privacy/blur.py)).
 
-**Verify it yourself:** disconnect the network and run the full flow —
-upload, index, ask, cited answer. It all works. Zero outbound requests.
+Leaks 4 and 5 were invisible to code review and to the running app. Only an
+executable test found them — which is the whole argument for shipping one.
 
 ## Tech stack
 

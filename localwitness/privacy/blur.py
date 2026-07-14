@@ -1,17 +1,31 @@
 """YOLOv8n person detection + Gaussian blur for privacy-safe export. [Phase 2]"""
 
+import os
 import time
 from pathlib import Path
 
 import cv2
-from ultralytics import YOLO, settings
 
-from localwitness import metrics
+MODELS_DIR = Path(__file__).resolve().parents[2] / "models"
+WEIGHTS = MODELS_DIR / "yolov8n.pt"
+
+# Privacy: Ultralytics probes Cloudflare/Google DNS (1.1.1.1, 8.8.8.8) at
+# IMPORT time to set an ONLINE flag — before you call a single function.
+# YOLO_OFFLINE is the only way to stop it and must be set before the import
+# below, so the order here is load-bearing.
+#
+# Offline-first, not offline-only: YOLO_OFFLINE also blocks weight downloads,
+# so we set it only once the weights are cached. A fresh clone is allowed the
+# documented one-time fetch; every run after that touches no network at all.
+if WEIGHTS.exists():
+    os.environ.setdefault("YOLO_OFFLINE", "True")
+
+from ultralytics import YOLO, settings  # noqa: E402
+
+from localwitness import metrics  # noqa: E402
 
 # Privacy: Ultralytics ships with usage analytics ("sync") on — never allowed here.
 settings.update({"sync": False})
-
-MODELS_DIR = Path(__file__).resolve().parents[2] / "models"
 PERSON_CLASS = 0  # COCO class id for "person"
 # Deliberately low: for a privacy blur, a false positive (blurring a bit too
 # much) is far cheaper than a miss (exporting a recognizable bystander).

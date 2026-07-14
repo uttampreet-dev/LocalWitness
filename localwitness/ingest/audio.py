@@ -13,16 +13,28 @@ MODELS_DIR = Path(__file__).resolve().parents[2] / "models"
 _model: WhisperModel | None = None
 
 
+def _load(local_only: bool) -> WhisperModel:
+    return WhisperModel(
+        WHISPER_MODEL,
+        device="auto",
+        compute_type="int8",
+        download_root=str(MODELS_DIR),
+        local_files_only=local_only,
+    )
+
+
 def _get_model() -> WhisperModel:
     global _model
     if _model is None:
         start = time.perf_counter()
-        _model = WhisperModel(
-            WHISPER_MODEL,
-            device="auto",
-            compute_type="int8",
-            download_root=str(MODELS_DIR),
-        )
+        # Privacy: offline-first. Without local_files_only, faster-whisper
+        # resolves huggingface.co on EVERY load even when the weights are
+        # already cached. We only reach the network if the model is genuinely
+        # missing (the documented one-time first-run download).
+        try:
+            _model = _load(local_only=True)
+        except Exception:
+            _model = _load(local_only=False)
         load_s = time.perf_counter() - start
         metrics.record_timing("whisper_load_s", load_s)
         metrics.record_model(
