@@ -26,7 +26,7 @@ from localwitness.metrics import MODEL_SPECS, get_metrics, latest
 from localwitness.ingest.audio import transcribe
 from localwitness.ingest.documents import extract_text
 from localwitness.ingest.images import caption
-from localwitness.query.answer import OLLAMA_ERRORS, answer_stream
+from localwitness.query.answer import FALLBACK, OLLAMA_ERRORS, answer_stream
 from localwitness.query.retrieve import retrieve
 
 AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a"}
@@ -62,12 +62,14 @@ def pdf_page_png(path_str: str, page_number: int, needle: str, mtime: float) -> 
 
 
 def text_context_window(path: Path, chunk_text: str, window: int = 650):
-    """(pre, match, post) around the cited chunk in the source text, using
-    the same whitespace normalization the indexer used so the chunk is an
-    exact substring. Returns None if the passage can't be located."""
-    from localwitness.ingest.documents import _normalize
+    """(pre, match, post) around the cited chunk in the source text.
 
-    text = _normalize(path.read_text(encoding="utf-8", errors="replace"))
+    Reads the file exactly the way documents.extract_text() does for .md/.txt
+    (raw text, stripped — NOT whitespace-normalized; only PDFs are normalized),
+    so the stored chunk is a literal substring and the cited passage is always
+    locatable. Returns None if it still can't be found.
+    """
+    text = path.read_text(encoding="utf-8", errors="replace").strip()
     needle = chunk_text.strip()
     index = text.find(needle)
     if index == -1:  # fall back to the chunk's head if edges were trimmed
@@ -411,12 +413,21 @@ elif page == "Ask":
         else:
             ui.caption(f"no context view for {suffix} sources")
 
-    def _show_evidence(hits: list[dict]) -> None:
+    def _show_evidence(hits: list[dict], refused: bool = False) -> None:
+        """Retrieved sources. When the model declined to answer there is no
+        evidence — only the closest things it looked at — so say that plainly
+        rather than labelling non-answers 'Evidence'."""
         groups = ui.group_evidence(hits)
         plural = "source" if len(groups) == 1 else "sources"
+        heading = "Nearest matches" if refused else "Evidence"
         st.markdown(
-            ui.label(f"Evidence · {len(groups)} {plural}"), unsafe_allow_html=True
+            ui.label(f"{heading} · {len(groups)} {plural}"), unsafe_allow_html=True
         )
+        if refused:
+            ui.caption(
+                "the closest things in your notes — none of them answer the "
+                "question, which is why it declined"
+            )
         for group in groups:
             with st.container(key=f"evgrp_{group['name']}"):
                 st.markdown(ui.exhibit_row_html(group), unsafe_allow_html=True)
@@ -486,7 +497,10 @@ elif page == "Ask":
                 "evidence hidden while redaction is on — raw excerpts may contain PII"
             )
         else:
-            _show_evidence(result["hits"])
+            _show_evidence(
+                result["hits"],
+                refused=result["answer"].strip().startswith(FALLBACK),
+            )
 
     # Lightweight shortcuts, not a transcript: question strings only.
     recents = st.session_state.get("recent_questions", [])
