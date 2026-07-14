@@ -219,6 +219,52 @@ taking seriously is that the fine-tuned weights export and run locally; on a
 real 200–400-image dataset you would train the same way (Colab is fine) and
 copy the weights back — **inference stays 100% local either way.**
 
+## Evaluation: is it actually right — and does it refuse to guess?
+
+Speed numbers say nothing about trustworthiness. A citation is worthless if it
+points at the wrong source, and a second brain is *dangerous* if it invents
+things it was never told. So correctness is measured, not asserted:
+
+```bash
+python scripts/evaluate.py
+```
+
+[scripts/evaluate.py](scripts/evaluate.py) runs a fixed golden set over the
+shipped `sample_data` corpus: nine questions the notes **do** answer (each
+paired with the source that actually holds the fact) and five they **cannot**.
+
+| Metric | Score | What it means |
+|---|---|---|
+| Retrieval hit-rate | **9/9 (100%)** | the source holding the answer was among the retrieved chunks |
+| Citation accuracy | **8/9 (89%)** | the answer cited the source that actually holds the fact |
+| Refusal rate | **5/5 (100%)** | said *"That's not in my notes."* rather than inventing an answer |
+
+**Zero hallucinations across the five unanswerable questions.**
+
+### What the evaluation caught
+
+It did not pass first time. The original prompt scored **3/5 on refusal — it
+hallucinated twice** — and both failures are worth naming:
+
+- *"What is the penalty if the contractor delivers late?"* → the contract has
+  no late-delivery clause, so the model **stitched unrelated fee clauses into
+  a plausible-sounding penalty.**
+- *"Who is the contractor's project manager?"* → it answered **"Sarah"**, who
+  is the *client's* lead, not the contractor's PM.
+
+This is the classic RAG failure: retrieval returns chunks that are *topically
+near* the question, and the model treats nearness as permission to infer. The
+fix is a grounding rule that names the trap outright — retrieved text is
+selected by *similarity*, so it will frequently sit beside the answer without
+containing it ([query/answer.py](localwitness/query/answer.py)).
+
+**An honest trade-off.** Tuning for refusal cost one legitimate answer: a
+question the notes *do* answer now gets a false *"not in my notes"* (8/9, not
+9/9). That trade was kept deliberately. For contracts, medical notes, and
+interviews, **a confident wrong answer is far more dangerous than a missing
+one** — and the evidence panel means a user can always check the sources
+themselves.
+
 ## Setup
 
 Prereqs: Python 3.11 and [Ollama](https://ollama.com) installed and running.
