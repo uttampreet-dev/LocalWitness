@@ -88,7 +88,7 @@ flowchart TB
 
 The only network sockets the app opens are **loopback** (`127.0.0.1:11434`, the
 local Ollama server). This is proven, not asserted — see
-[`scripts/verify_offline.py`](scripts/verify_offline.py), which blocks every
+[`scripts/verify_offline.py`](../scripts/verify_offline.py), which blocks every
 non-loopback connection and runs the full pipeline (**zero outbound connections**).
 
 ## Key design decisions
@@ -96,7 +96,7 @@ non-loopback connection and runs the full pipeline (**zero outbound connections*
 - **Grounding over fluency.** The system is tuned to say *"That's not in my
   notes"* rather than guess. For contracts and medical records, a confident wrong
   answer is far more dangerous than a missing one. Measured: **zero hallucinations**
-  across the unanswerable test set ([`scripts/evaluate.py`](scripts/evaluate.py)).
+  across the unanswerable test set ([`scripts/evaluate.py`](../scripts/evaluate.py)).
 - **Citations are load-bearing, not decoration.** Chunks are tagged with
   timestamps/pages at index time so a citation can reopen the *exact* source
   location. This is why the original files are vaulted locally.

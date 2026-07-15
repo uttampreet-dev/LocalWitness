@@ -6,8 +6,6 @@ documents, and photos; LocalWitness transcribes, describes, and indexes them
 a citation you can click and open at the exact cited spot** — the PDF page, the
 second in the audio, the line in the file. No cloud, no account, no network.
 
-*Built solo for OSDHack 2026 (theme: On-Device AI).*
-
 ## Why LocalWitness?
 
 **Everything runs on your device.** Speech recognition, vision, embeddings,
@@ -41,9 +39,9 @@ flowchart LR
     style ANSWER stroke:#4DD4C4,stroke-width:2px
 ```
 
-**Deeper docs:** [ARCHITECTURE.md](ARCHITECTURE.md) (full pipeline, data flow,
-design decisions) · [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md) (measured
-performance, quantization, device specs, evaluation) · [PRIVACY.md](PRIVACY.md)
+**Deeper docs:** [ARCHITECTURE.md](docs/ARCHITECTURE.md) (full pipeline, data flow,
+design decisions) · [TECHNICAL_REPORT.md](docs/TECHNICAL_REPORT.md) (measured
+performance, quantization, device specs, evaluation) · [PRIVACY.md](docs/PRIVACY.md)
 (data handling, storage, safety, risks). Both proofs are runnable:
 `python scripts/verify_offline.py` and `python scripts/evaluate.py`.
 
@@ -242,7 +240,7 @@ paired with the source that actually holds the fact) and five they **cannot**.
 | Metric | Score | What it means |
 |---|---|---|
 | Retrieval hit-rate | **9/9 (100%)** | the source holding the answer was among the retrieved chunks |
-| Citation accuracy | **8/9 (89%)** | the answer cited the source that actually holds the fact |
+| Citation accuracy | **7/9 (78%)** | the answer cited the source that actually holds the fact |
 | Refusal rate | **5/5 (100%)** | said *"That's not in my notes."* rather than inventing an answer |
 
 **Zero hallucinations across the five unanswerable questions.**
@@ -264,12 +262,21 @@ fix is a grounding rule that names the trap outright — retrieved text is
 selected by *similarity*, so it will frequently sit beside the answer without
 containing it ([query/answer.py](localwitness/query/answer.py)).
 
-**An honest trade-off.** Tuning for refusal cost one legitimate answer: a
-question the notes *do* answer now gets a false *"not in my notes"* (8/9, not
-9/9). That trade was kept deliberately. For contracts, medical notes, and
-interviews, **a confident wrong answer is far more dangerous than a missing
-one** — and the evidence panel means a user can always check the sources
-themselves.
+**Both of the two misses are refusals, not errors** — in neither case did it
+state something false, it declined. And both are instructive:
+
+- *"How many rounds of revisions are included?"* — the source sentence *"Two
+  rounds of design revisions are includ**|**ed in the base fee"* is split across
+  a chunk boundary, so the retrieved half omits the word "two"; it declines
+  rather than guess.
+- *"Did they ask for an extra landing page?"* — the sources genuinely conflict
+  (the notes call it *"a maybe"*, the later voice note says *"after all"*); it
+  declines rather than pick a side.
+
+The failure mode is **silence, not fabrication** — exactly what you want in
+something holding contracts and medical notes, and the evidence panel means a
+user can always check the nearest matches themselves. Both misses point at one
+future-scope fix: sentence-aware chunk boundaries.
 
 ## Setup
 
@@ -313,11 +320,28 @@ files to try immediately.
 4. **Metrics** — the local AI stack, storage footprint, and live-measured
    performance numbers for every stage.
 
-## Demo & screenshots
+### Try it (sample input → expected output)
 
-**Demo video:** `[demo video link]`
+Index the four files in `sample_data/` (a voice note, a contract PDF, meeting
+notes, a whiteboard photo), then in **Ask** try a question that can only be
+answered by combining the *voice note* and the *contract*:
 
-Screenshots available in the Unstop submission.
+> **Q:** What's the final deadline for the designs, and how much am I getting paid in total?
+
+**Expected** — a grounded answer citing **two** sources:
+
+> The final deadline for the designs is August 14th, and the total fixed fee for
+> the work described in Section 1 is $4,500 USD.
+> `[sarah_followup_call.m4a @ 00:00][northwind_contract.pdf, page 1]`
+
+Click either citation and the source opens at the cited spot — the contract page
+with the passage outlined, or the recording cued to the moment. Now ask
+something the notes don't contain:
+
+> **Q:** What is Sarah's phone number? → **A:** *That's not in my notes.*
+
+It refuses rather than guess. To reproduce the same result headlessly, run
+`python scripts/evaluate.py`.
 
 ## Known limitations
 
@@ -345,6 +369,40 @@ Screenshots available in the Unstop submission.
 - **Encrypted local backup** — optional at-rest encryption for the vault.
 - **Edge capture companion** — e.g. an ESP32 wake-word recorder that drops
   voice notes straight into the vault.
+
+## Project structure
+
+```
+app.py                     Streamlit entry — Upload · Library · Ask · Metrics
+localwitness/
+  ingest/
+    audio.py               speech-to-text (faster-whisper)
+    documents.py           PDF / txt / md extraction (pypdf)
+    images.py              captioning + text-in-image (Moondream)
+  index/
+    chunk.py               source-tagged, overlapping chunking
+    embed.py               embeddings (all-MiniLM-L6-v2, INT8 ONNX)
+    store.py               vector store (ChromaDB, persistent HNSW)
+  query/
+    retrieve.py            top-k semantic search
+    answer.py              grounded, cited RAG (qwen2.5:3b via Ollama)
+  privacy/
+    redact.py              PII redaction (Presidio + spaCy)
+    blur.py                person/face blur on export (YOLOv8n)
+  metrics.py               live performance measurement
+  ui.py                    design system + UI components
+scripts/
+  verify_offline.py        proof: zero non-loopback connections
+  evaluate.py              grounding & hallucination evaluation
+  quantize_embeddings.py   INT8 ONNX export for the embedder
+  finetune_yolo.py         YOLOv8n fine-tune → export → local inference
+sample_data/               demo files (voice note · contract · notes · image)
+assets/ · static/fonts/    styles, favicon, vendored fonts (offline)
+docs/                      ARCHITECTURE.md · TECHNICAL_REPORT.md · PRIVACY.md
+```
+
+Not committed (gitignored, created locally): `models/` (weights), `chroma_db/`
+(index), `sources/` (original-file vault), `exports/` (blurred images).
 
 ## Credits & licenses
 

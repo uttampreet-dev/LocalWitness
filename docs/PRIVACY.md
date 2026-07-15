@@ -10,7 +10,7 @@ claims below are enforced by an executable test, not just stated.
   otherwise — is ever transmitted off the machine.
 - **No cloud AI.** There is no API key anywhere in the codebase. No OpenAI,
   Anthropic, Gemini, or hosted-inference call exists in any code path.
-- **Proven, not asserted.** [`scripts/verify_offline.py`](scripts/verify_offline.py)
+- **Proven, not asserted.** [`scripts/verify_offline.py`](../scripts/verify_offline.py)
   blocks every non-loopback socket and runs the full pipeline: **zero outbound
   connections**. The only sockets opened are loopback (`127.0.0.1:11434`, the
   local Ollama server).
