@@ -41,6 +41,12 @@ flowchart LR
     style ANSWER stroke:#4DD4C4,stroke-width:2px
 ```
 
+**Deeper docs:** [ARCHITECTURE.md](ARCHITECTURE.md) (full pipeline, data flow,
+design decisions) · [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md) (measured
+performance, quantization, device specs, evaluation) · [PRIVACY.md](PRIVACY.md)
+(data handling, storage, safety, risks). Both proofs are runnable:
+`python scripts/verify_offline.py` and `python scripts/evaluate.py`.
+
 ## Problem
 
 People accumulate voice notes, contracts, meeting notes, and photos that hold
