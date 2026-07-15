@@ -373,36 +373,41 @@ It refuses rather than guess. To reproduce the same result headlessly, run
 ## Project structure
 
 ```
-app.py                     Streamlit entry — Upload · Library · Ask · Metrics
-localwitness/
-  ingest/
-    audio.py               speech-to-text (faster-whisper)
-    documents.py           PDF / txt / md extraction (pypdf)
-    images.py              captioning + text-in-image (Moondream)
-  index/
-    chunk.py               source-tagged, overlapping chunking
-    embed.py               embeddings (all-MiniLM-L6-v2, INT8 ONNX)
-    store.py               vector store (ChromaDB, persistent HNSW)
-  query/
-    retrieve.py            top-k semantic search
-    answer.py              grounded, cited RAG (qwen2.5:3b via Ollama)
-  privacy/
-    redact.py              PII redaction (Presidio + spaCy)
-    blur.py                person/face blur on export (YOLOv8n)
-  metrics.py               live performance measurement
-  ui.py                    design system + UI components
-scripts/
-  verify_offline.py        proof: zero non-loopback connections
-  evaluate.py              grounding & hallucination evaluation
-  quantize_embeddings.py   INT8 ONNX export for the embedder
-  finetune_yolo.py         YOLOv8n fine-tune → export → local inference
-sample_data/               demo files (voice note · contract · notes · image)
-assets/ · static/fonts/    styles, favicon, vendored fonts (offline)
-docs/                      ARCHITECTURE.md · TECHNICAL_REPORT.md · PRIVACY.md
+LocalWitness/
+├── app.py                      # Streamlit entry — Upload · Library · Ask · Metrics
+├── localwitness/               # core package
+│   ├── ingest/
+│   │   ├── audio.py            # speech-to-text (faster-whisper)
+│   │   ├── documents.py        # PDF / txt / md extraction (pypdf)
+│   │   └── images.py           # captioning + text-in-image (Moondream)
+│   ├── index/
+│   │   ├── chunk.py            # source-tagged, overlapping chunking
+│   │   ├── embed.py            # embeddings (all-MiniLM-L6-v2, INT8 ONNX)
+│   │   └── store.py            # vector store (ChromaDB, persistent HNSW)
+│   ├── query/
+│   │   ├── retrieve.py         # top-k semantic search
+│   │   └── answer.py           # grounded, cited RAG (qwen2.5:3b via Ollama)
+│   ├── privacy/
+│   │   ├── redact.py           # PII redaction (Presidio + spaCy)
+│   │   └── blur.py             # person/face blur on export (YOLOv8n)
+│   ├── metrics.py              # live performance measurement
+│   └── ui.py                   # design system + UI components
+├── scripts/
+│   ├── verify_offline.py       # proof: zero non-loopback connections
+│   ├── evaluate.py             # grounding & hallucination evaluation
+│   ├── quantize_embeddings.py  # INT8 ONNX export for the embedder
+│   └── finetune_yolo.py        # YOLOv8n fine-tune → export → local inference
+├── docs/                       # ARCHITECTURE · TECHNICAL_REPORT · PRIVACY
+├── sample_data/                # demo files (voice note · contract · notes · image)
+├── assets/                     # style.css, favicon.svg
+├── static/fonts/               # vendored Inter + JetBrains Mono (offline)
+├── requirements.txt
+└── LICENSE                     # MIT
 ```
 
-Not committed (gitignored, created locally): `models/` (weights), `chroma_db/`
-(index), `sources/` (original-file vault), `exports/` (blurred images).
+Created locally, gitignored (not in the repo): `models/` (weights),
+`chroma_db/` (index), `sources/` (original-file vault), `exports/` (blurred
+image exports).
 
 ## Credits & licenses
 
